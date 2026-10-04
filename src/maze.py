@@ -16,7 +16,7 @@ DIRECTIONS = {
 
 
 class Maze:
-    def __init__(self):
+    def __init__(self, seed: int | None = None):
         self.CELL_SIZE = 20
         pygame.init()
         self.WI = 800
@@ -24,7 +24,11 @@ class Maze:
         self.screen = pygame.display.set_mode((self.WI, self.HE))
         self.columns = (self.WI // self.CELL_SIZE) - 1
         self.rows = (self.HE // self.CELL_SIZE) - 1
-        self.maze_init = MazeGenerator((self.columns, self.rows))
+        if seed is None:
+            self.maze_init = MazeGenerator((self.columns, self.rows))
+        else:
+            self.maze_init = MazeGenerator((self.columns, self.rows), seed=seed)
+
         self.maze = self.maze_init.maze
         self.draw = Draw(self.screen)
 
