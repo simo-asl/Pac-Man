@@ -1,12 +1,12 @@
 import pygame
 
 
-def draw_vertical_line(scren, h: int, w: int, stop: int, color):
+def draw_horizental_line(scren, h: int, w: int, stop: int, color):
     for x in range(w, stop):
         scren.set_at((x, h), color)
 
 
-def draw_horizental_line(scren, h: int, w: int, stop: int, color):
+def draw_vertical_line(scren, h: int, w: int, stop: int, color):
     for x in range(h, stop):
         scren.set_at((w, x), color)
 
