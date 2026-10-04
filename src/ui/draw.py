@@ -1,6 +1,3 @@
-from mazegenerator import MazeGenerator
-
-
 class Draw:
     def __init__(self, scren, cell_size: int = 20):
         self.CELL_SIZE = cell_size
