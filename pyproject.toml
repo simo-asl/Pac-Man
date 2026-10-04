@@ -1,0 +1,18 @@
+[project]
+name = "pac-man"
+version = "0.1.0"
+description = "Pac-Man project with Pygame and MazeGenerator"
+readme = "README.md"
+authors = [
+    { name = "tlaghzal", email = "laghzaltarik0@gmail.com" }
+]
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "mazegenerator",
+    "mlx",
+    "pygame>=2.6.1",
+]
+
+[tool.uv.sources]
+mazegenerator = { path = "vendor/mazegenerator-2.1.0-py3-none-any.whl" }
+mlx = { path = "ubuntu/mlx-2.2-py3-none-any.whl" }
