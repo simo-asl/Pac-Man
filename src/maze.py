@@ -35,6 +35,22 @@ class Maze:
 
             pygame.display.flip()
 
+    def can_move(self, x: int, y: int, direction: int) -> bool:
+        return not (self.maze[y][x] & direction)
+
+    def get_available_moves(self, x: int, y: int) -> list[tuple[int, int]]:
+        paths = []
+        if self.can_move(x, y, 1):
+            paths.append((x, y - 1))
+        if self.can_move(x, y, 2):
+            paths.append((x + 1, y))
+        if self.can_move(x, y, 4):
+            paths.append((x, y + 1))
+        if self.can_move(x, y, 8):
+            paths.append((x - 1, y))
+
+        return paths
+
 
 t = Maze()
 t.run_ui()
