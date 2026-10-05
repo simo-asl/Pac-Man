@@ -1,5 +1,7 @@
 PYTHON = python3
 SRC = src
+ARGS ?
+
 
 .PHONY: install run clean lint
 
@@ -7,7 +9,7 @@ install:
 	uv sync
 
 run:
-	uv run $(PYTHON) -m $(SRC)
+	uv run $(PYTHON) -m $(SRC) $(ARGS)
 
 lint:
 	uv run flake8 $(SRC)

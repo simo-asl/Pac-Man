@@ -1,3 +1,6 @@
+import pygame
+
+
 class Draw:
     def __init__(self, screen, cell_size: int = 20):
         self.CELL_SIZE = cell_size
@@ -37,3 +40,11 @@ class Draw:
                 dy = y - center_y
                 if dx * dx + dy * dy <= radius * radius:
                     self.screen.set_at((x, y), color)
+
+    def draw_text(self, text: str, x: int, y: int, size: int, color):
+        font = pygame.font.Font(None, size)
+        surface = font.render(text, True, color)
+        self.screen.blit(surface, (x, y))
+
+    def clear(self, color=(0, 0, 0)) -> None:
+        self.screen.fill(color)
