@@ -24,6 +24,7 @@ class Player:
         self.target_x: int = x
         self.target_y: int = y
         self.color: tuple[int, int, int] = (255, 255, 0)
+        self.invincible: bool = False
 
     def lose_life(self) -> None:
 
@@ -32,12 +33,15 @@ class Player:
         if self.lives <= 0:
             self.dead()
 
-    def dead(self) -> None:
-        self.alive = False
+    def add_life(self) -> None:
+        self.lives += 1
 
     def activate_power(self) -> None:
         self.powered_up = True
         self.power_start_time = pygame.time.get_ticks()
+
+    def toggle_invincibility(self) -> None:
+        self.invincible = not self.invincible
 
     def update_power(self) -> None:
         if self.powered_up:
