@@ -1,6 +1,9 @@
 import pygame
 
 
+# Kan7awel nreproduci ga3 pygame li gha nhtajo cause all of them forbiden
+
+
 class Draw:
     def __init__(self, screen, cell_size: int = 20):
         self.CELL_SIZE = cell_size
@@ -48,3 +51,9 @@ class Draw:
 
     def clear(self, color=(0, 0, 0)) -> None:
         self.screen.fill(color)
+
+    def draw_rect(self, x, y, width, height, color, thickness=1):
+        self.draw_vertical_line(x, y, y + height, color, thickness)
+        self.draw_horizontal_line(x, y, x + width, color, thickness)
+        self.draw_horizontal_line(x, y + height, x + width, color, thickness)
+        self.draw_vertical_line(x + width, y, y + height, color, thickness)
