@@ -16,21 +16,44 @@ DIRECTIONS = {
 
 
 class Maze:
+    # Beta layout:
+    # The previous version used a fixed 800x600 window and calculated the maze
+    # size from it, which created a rectangular maze with unused screen space.
+    # For now, we use a square 25x25 maze and calculate the window size from
+    # CELL_SIZE so the maze fills the window exactly.
+    # These values are manualy intialized for now until we use the conf file
     def __init__(self, seed: int | None = None):
-        self.CELL_SIZE = 20
         pygame.init()
-        self.WI = 800
-        self.HE = 600
-        self.screen = pygame.display.set_mode((self.WI, self.HE))
-        self.columns = (self.WI // self.CELL_SIZE) - 1
-        self.rows = (self.HE // self.CELL_SIZE) - 1
+        # Dementions just for try my part
+        # feel free to change them since this is ur part
+        self.CELL_SIZE = 30
+        self.columns = 25
+        self.rows = 25
+
+        self.WI = self.columns * self.CELL_SIZE
+        self.HE = self.rows * self.CELL_SIZE
+
+        self.screen = pygame.display.set_mode(
+            (self.WI, self.HE)
+        )
+        pygame.display.set_caption("Pac-Man")
+
         if seed is None:
-            self.maze_init = MazeGenerator((self.columns, self.rows))
+            self.maze_init = MazeGenerator(
+                (self.columns, self.rows)
+            )
         else:
-            self.maze_init = MazeGenerator((self.columns, self.rows), seed=seed)
+            self.maze_init = MazeGenerator(
+                (self.columns, self.rows),
+                seed=seed
+            )
 
         self.maze = self.maze_init.maze
-        self.draw = Draw(self.screen)
+
+        self.draw = Draw(
+            self.screen,
+            self.CELL_SIZE
+        )
 
     def run_ui(self):
         for y, row in enumerate(self.maze):
@@ -47,6 +70,12 @@ class Maze:
     def can_move(self, x: int, y: int, direction: int) -> bool:
         return not (self.maze[y][x] & direction)
 
+    # U should give me this method but u didn't to let me see the fkn maze
+    def draw_maze(self) -> None:
+        for y, row in enumerate(self.maze):
+            for x, cell in enumerate(row):
+                self.draw.draw_maze(x, y, cell, color38, 2)
+
     def get_available_moves(self, x: int, y: int) -> list[tuple[int, int]]:
         paths = []
         for direction, (dx, dy) in DIRECTIONS.items():
@@ -55,6 +84,7 @@ class Maze:
 
         return paths
 
-
-t = Maze()
-t.run_ui()
+    # We need this method to get the center pos if each walkable cell
+    # So Game can place pacgums bla depending on Maze internals
+    def get_walkable_positions() -> list[tuple[int, int]]:
+        pass
