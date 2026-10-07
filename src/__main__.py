@@ -1,11 +1,14 @@
 import sys
+import time
 
 import pygame
 
-from .parsing import Parser
 from .game.game import Game
+from .game.ghost import GhostsManager
 from .game.player import Player
 from .maze import Maze
+from .parsing import Parser
+from .ui import Draw
 
 try:
     if len(sys.argv) != 2:
@@ -14,6 +17,8 @@ try:
     level = 0
     maze = Maze(parser.parser(), level)
     screen = maze.screen
+    tim = time.monotonic()
+    time_mode_delay = 0.3
 
     clock = pygame.time.Clock()
 
@@ -24,9 +29,10 @@ try:
         maze.WI,
         maze.HE,
     )
-
+    draw = Draw(screen)
     game = Game(screen, maze.WI, maze.HE)
-
+    ghosts = GhostsManager(draw, maze)
+    ghosts.create_ghost(10, 22, 32, (1, 2))
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -34,12 +40,16 @@ try:
                 sys.exit()
 
         player.move(maze)
+
         player.update_power()
 
         screen.fill((0, 0, 0))
         maze.draw_maze()
 
         player.draw(screen)
+        player_grid = maze.pixel_to_grid(player.x, player.y)
+        ghosts.move_all(maze, player_grid)
+        ghosts.draw_all()
 
         pygame.display.flip()
         clock.tick(60)

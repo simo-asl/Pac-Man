@@ -1,14 +1,20 @@
 import pygame
 
-
 # all initialized vars are temp for the beta version
 # so i'll update them once u parse the fkn conf file
 # read the comments u will find them funny and hopefully helpful
 
-class Player:
 
-    def __init__(self, x: int, y: int, radius: int, s_width: int = 900,
-                 s_height: int = 900, speed: int = 7):
+class Player:
+    def __init__(
+        self,
+        x: int,
+        y: int,
+        radius: int,
+        s_width: int = 900,
+        s_height: int = 900,
+        speed: int = 7,
+    ):
 
         self.x: int = x
         self.y: int = y
@@ -45,8 +51,7 @@ class Player:
 
     def update_power(self) -> None:
         if self.powered_up:
-            if (pygame.time.get_ticks() -
-                    self.power_start_time >= self.power_duration):
+            if pygame.time.get_ticks() - self.power_start_time >= self.power_duration:
                 self.powered_up = False
 
     # the current movement mechanism is working with the arrow keys

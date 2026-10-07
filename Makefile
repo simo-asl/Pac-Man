@@ -1,6 +1,5 @@
 PYTHON = python3
 SRC = src
-ARGS ?
 
 
 .PHONY: install run clean lint

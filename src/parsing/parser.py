@@ -1,5 +1,6 @@
-from .modele import GameConfig
 from pathlib import Path
+
+from .modele import GameConfig
 
 
 class Parser:
@@ -40,10 +41,3 @@ class Parser:
         stripped = self._remove_comments(read)
         config = GameConfig.model_validate_json(stripped)
         return config
-
-
-import sys
-
-p = Parser(sys.argv[1])
-t = p.parser()
-print(t)
