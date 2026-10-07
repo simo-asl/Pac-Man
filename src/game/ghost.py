@@ -39,20 +39,30 @@ class Ghost:
         self.load: Surface = draw.load_image(f"src/game/{self.images[self.kind]}")
         self.last_move = time.monotonic()
         self.move_delay = 0.5
+        self.pixel_x, self.pixel_y = maze.grid_to_pixel(x, y)
+        self.target_x = self.pixel_x
+        self.target_y = self.pixel_y
 
     def move(self, x: int, y: int) -> None:
         self.x = x
         self.y = y
-        center_x, center_y = self.maze.grid_to_pixel(self.x, self.y)
-        x = center_x - self.load.get_width() // 2
-        y = center_y - self.load.get_height() // 2
-        self.draw.draw_image(self.load, x, y)
+        self.target_x, self.target_y = self.maze.grid_to_pixel(x, y)
 
     def draw_ghost(self) -> None:
-        center_x, center_y = self.maze.grid_to_pixel(self.x, self.y)
-        x = center_x - self.load.get_width() // 2
-        y = center_y - self.load.get_height() // 2
+        x = self.pixel_x - self.load.get_width() // 2
+        y = self.pixel_y - self.load.get_height() // 2
         self.draw.draw_image(self.load, x, y)
+
+    def update(self) -> None:
+        if self.pixel_x < self.target_x:
+            self.pixel_x += self.speed
+        elif self.pixel_x > self.target_x:
+            self.pixel_x -= self.speed
+
+        if self.pixel_y < self.target_y:
+            self.pixel_y += self.speed
+        elif self.pixel_y > self.target_y:
+            self.pixel_y -= self.speed
 
 
 class GhostsManager:
@@ -125,4 +135,5 @@ class GhostsManager:
 
     def draw_all(self):
         for ghost in self.ghosts:
+            ghost.update()
             ghost.draw_ghost()
