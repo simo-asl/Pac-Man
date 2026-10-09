@@ -6,6 +6,13 @@ from ..maze import DIRECTIONS, Maze
 from ..ui import Draw
 from .player import Player
 
+DIRECTION_NAMES = {
+    1: "up",
+    2: "right",
+    4: "down",
+    8: "left",
+}
+
 
 class Ghost:
     def __init__(
@@ -49,6 +56,9 @@ class Ghost:
     def draw_ghost(self) -> None:
         x = self.pixel_x - self.load.get_width() // 2
         y = self.pixel_y - self.load.get_height() // 2
+        direction = DIRECTION_NAMES[self.direction]
+        path = f"src/game/assets/ghosts/{self.kind}_{direction}.png"
+        self.load = self.draw.load_image(path)
         self.draw.draw_image(self.load, x, y)
 
     def update(self) -> None:
