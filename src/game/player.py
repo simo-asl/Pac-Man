@@ -31,12 +31,15 @@ class Player:
         self.target_y: int = y
         self.color: tuple[int, int, int] = (255, 255, 0)
         self.invincible: bool = False
+        # TODO ADD IT THIS FOR GHOSTS |
+        self.direction: int = 2
 
     def lose_life(self) -> None:
 
         if self.lives > 0:
             self.lives -= 1
         if self.lives <= 0:
+            # FIXME no self.dead
             self.dead()
 
     def add_life(self) -> None:
@@ -68,15 +71,19 @@ class Player:
 
             if keys[pygame.K_LEFT] and maze.can_move(cell_x, cell_y, 8):
                 self.target_x -= maze.CELL_SIZE
+                self.direction = 8
 
             elif keys[pygame.K_RIGHT] and maze.can_move(cell_x, cell_y, 2):
                 self.target_x += maze.CELL_SIZE
+                self.direction = 2
 
             elif keys[pygame.K_UP] and maze.can_move(cell_x, cell_y, 1):
                 self.target_y -= maze.CELL_SIZE
+                self.direction = 1
 
             elif keys[pygame.K_DOWN] and maze.can_move(cell_x, cell_y, 4):
                 self.target_y += maze.CELL_SIZE
+                self.direction = 4
 
         if self.x < self.target_x:
             self.x += min(self.speed, self.target_x - self.x)

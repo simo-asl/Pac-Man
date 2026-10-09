@@ -31,8 +31,38 @@ try:
     )
     draw = Draw(screen)
     game = Game(screen, maze.WI, maze.HE)
-    ghosts = GhostsManager(draw, maze)
-    ghosts.create_ghost(10, 22, 32, (1, 2))
+    ghosts = GhostsManager(draw, maze, player)
+    ghosts.create_ghost(
+        10,
+        22,
+        2,
+        (maze.columns - 1, 0),
+        "blinky",
+    )
+
+    ghosts.create_ghost(
+        1,
+        2,
+        2,
+        (0, 0),
+        "pinky",
+    )
+
+    ghosts.create_ghost(
+        14,
+        14,
+        1,
+        (maze.columns - 1, maze.rows - 1),
+        "inky",
+    )
+
+    ghosts.create_ghost(
+        1,
+        maze.rows - 2,
+        2,
+        (0, maze.rows - 1),
+        "clyde",
+    )
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -48,7 +78,7 @@ try:
 
         player.draw(screen)
         player_grid = maze.pixel_to_grid(player.x, player.y)
-        ghosts.move_all(maze, player_grid)
+        ghosts.move_all()
         ghosts.draw_all()
 
         pygame.display.flip()
