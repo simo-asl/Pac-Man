@@ -1,4 +1,3 @@
-import time
 from collections import deque
 
 from pygame import Surface
@@ -37,8 +36,6 @@ class Ghost:
         self.maze = maze
         self.draw = draw
         self.load: Surface = draw.load_image(f"src/game/{self.images[self.kind]}")
-        self.last_move = time.monotonic()
-        self.move_delay = 0.5
         self.pixel_x, self.pixel_y = maze.grid_to_pixel(x, y)
         self.target_x = self.pixel_x
         self.target_y = self.pixel_y
@@ -55,14 +52,17 @@ class Ghost:
 
     def update(self) -> None:
         if self.pixel_x < self.target_x:
-            self.pixel_x += self.speed
+            self.pixel_x = min(self.speed + self.pixel_x, self.target_x)
         elif self.pixel_x > self.target_x:
-            self.pixel_x -= self.speed
+            self.pixel_x = max(self.pixel_x - self.speed, self.target_x)
 
         if self.pixel_y < self.target_y:
-            self.pixel_y += self.speed
+            self.pixel_y = min(self.pixel_y + self.speed, self.target_y)
         elif self.pixel_y > self.target_y:
-            self.pixel_y -= self.speed
+            self.pixel_y = max(self.pixel_y - self.speed, self.target_y)
+
+    def is_at_target(self) -> bool:
+        return self.pixel_x == self.target_x and self.pixel_y == self.target_y
 
 
 class GhostsManager:
@@ -79,7 +79,7 @@ class GhostsManager:
         corner: tuple[int, int],
         kind: str = "blinky",
         speed: int = 2,
-    ):
+    ) -> None:
         ghost = Ghost(x, y, self.maze, self.draw, direction, corner, kind, speed)
         self.ghosts.append(ghost)
 
@@ -87,7 +87,7 @@ class GhostsManager:
         self, maze: Maze, player_pos: tuple[int, int], ghost: Ghost
     ) -> list[tuple[int, int]]:
         start_x, start_y = ghost.x, ghost.y
-        q = deque()
+        q: deque = deque()
         parents = {}
         visited = set()
         visited.add((start_x, start_y))
@@ -116,7 +116,15 @@ class GhostsManager:
         maze: Maze,
         player_pos: tuple[int, int],
     ) -> None:
-        path = self.find_path_to_player(maze, player_pos, ghost)
+        path = []
+        if ghost.kind == "blinky":
+            path = self.find_path_to_player(maze, player_pos, ghost)
+        elif ghost.kind == "pinky":
+            ...
+        elif ghost.kind == "inky":
+            ...
+        elif ghost.kind == "clyde":
+            pass
         if not path:
             return
         ghost.move(*path[0])
@@ -127,11 +135,9 @@ class GhostsManager:
         player_pos: tuple[int, int],
     ) -> None:
         for ghost in self.ghosts:
-            now = time.monotonic()
-            if now - ghost.last_move < ghost.move_delay:
+            if not ghost.is_at_target():
                 continue
             self.move_ghost(ghost, maze, player_pos)
-            ghost.last_move = now
 
     def draw_all(self):
         for ghost in self.ghosts:
