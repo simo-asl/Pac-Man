@@ -87,8 +87,13 @@ class GhostsManager:
         new_moves = [move for move in moves if move != reverse]
         if not new_moves:
             return reverse if reverse in moves else None
-        else:
-            return random.choice(new_moves)
+        player_pos = self.maze.pixel_to_grid(self.player.x, self.player.y)
+        return max(
+            new_moves,
+            key=lambda pos: (
+                (pos[0] - player_pos[0]) ** 2 + (pos[1] - player_pos[1]) ** 2
+            ),
+        )
 
     def is_collesion(self, ghost: Ghost) -> bool:
         dx = self.player.x - ghost.pixel_x
@@ -105,6 +110,8 @@ class GhostsManager:
 
             if ghost.mode == "frightened":
                 ghost.get_eaten()
+            # if ghost.mode == "chase":
+            # hna player ymot
 
     def move_ghost(
         self,
