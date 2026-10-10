@@ -4,7 +4,7 @@ import time
 import pygame
 
 from .game.game import Game
-from .game.ghost import GhostsManager
+from .game.ghost_manger import GhostsManager
 from .game.player import Player
 from .maze import Maze
 from .parsing import Parser
@@ -80,6 +80,7 @@ try:
         player_grid = maze.pixel_to_grid(player.x, player.y)
         ghosts.move_all()
         ghosts.draw_all()
+        ghosts.frighten_all()
 
         pygame.display.flip()
         clock.tick(60)

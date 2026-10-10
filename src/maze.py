@@ -1,8 +1,8 @@
-from .ui import Draw
-
-from mazegenerator import MazeGenerator
-from .parsing import GameConfig
 import pygame
+from mazegenerator import MazeGenerator
+
+from .parsing import GameConfig
+from .ui import Draw
 
 color38 = (255, 153, 204)
 color39 = (204, 153, 255)
