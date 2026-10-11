@@ -1,4 +1,0 @@
-project-includes = [
-    "src/**/*.py",
-    "*.py",
-]

@@ -13,7 +13,8 @@ from .ui import Draw
 try:
     if len(sys.argv) != 2:
         raise Exception("U should add just Arg")
-    parser = Parser(sys.argv[1])
+    # parser = Parser(sys.argv[1])
+    parser = Parser("config.json")
     level = 0
     maze = Maze(parser.parser(), level)
     screen = maze.screen

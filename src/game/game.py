@@ -7,9 +7,7 @@ import pygame
 # If you find any bug or misunderstanding, just reach out to me
 # Maybe I cooked, maybe I didn't hhhhhhh
 class Game:
-
-    def __init__(self, screen: pygame.Surface,
-                 s_width: int = 900, s_height: int = 900):
+    def __init__(self, screen: pygame.Surface, s_width: int = 900, s_height: int = 900):
 
         self.score: int = 0
         self.s_height: int = s_height
@@ -21,8 +19,9 @@ class Game:
 
         self.score += add
 
-    def level_complete(self, pacgums: list[Pacgum],
-                       super_pacgums: list[SuperPacgum]) -> bool:
+    def level_complete(
+        self, pacgums: list[Pacgum], super_pacgums: list[SuperPacgum]
+    ) -> bool:
 
         for i in pacgums:
             if not i.eaten:
@@ -42,8 +41,7 @@ class Game:
             pacgums.append(Pacgum(x, y, 3))
         return pacgums
 
-    def create_super_pacgums(self,
-                             pos: list[tuple[int, int]]) -> list[SuperPacgum]:
+    def create_super_pacgums(self, pos: list[tuple[int, int]]) -> list[SuperPacgum]:
 
         super_pacgums: list[SuperPacgum] = []
 
@@ -61,14 +59,14 @@ class Game:
             player.x - player.radius,
             player.y - player.radius,
             player.radius * 2,
-            player.radius * 2
+            player.radius * 2,
         )
 
         pacgum_rect = pygame.Rect(
             pacgum.x - pacgum.radius,
             pacgum.y - pacgum.radius,
             pacgum.radius * 2,
-            pacgum.radius * 2
+            pacgum.radius * 2,
         )
 
         if not pacgum.eaten and player_rect.colliderect(pacgum_rect):

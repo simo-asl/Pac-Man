@@ -7,6 +7,7 @@ class Draw:
     def __init__(self, screen: pygame.Surface, cell_size: int = 20):
         self.CELL_SIZE = cell_size
         self.screen: pygame.Surface = screen
+        pygame.font.init()
 
     def draw_horizontal_line(
         self, start_x: int, y: int, end_x: int, color, thickness: int = 1
@@ -45,9 +46,13 @@ class Draw:
                 if dx * dx + dy * dy <= radius * radius:
                     self.screen.set_at((x, y), color)
 
-    def draw_text(self, text: str, x: int, y: int, size: int, color) -> None:
-        font = pygame.font.Font(None, size)
+    def draw_text(
+        self, text: str, x: int, y: int, size: int, color, centre: bool = False
+    ) -> None:
+        font = pygame.font.Font(None, size=size)
         surface = font.render(text, True, color)
+        if centre:
+            x -= surface.get_width() // 2
         self.screen.blit(surface, (x, y))
 
     def clear(self, color=(0, 0, 0)) -> None:

@@ -24,3 +24,7 @@ as a local `uv` source in `pyproject.toml`, so `uv sync` can install it without
 downloading the original ZIP again. The download itself is ignored by Git.
 
 Close the preview window or press Escape to exit.
+
+
+
+## tlaghzal - mel-asla

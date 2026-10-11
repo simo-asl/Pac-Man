@@ -24,6 +24,12 @@ class Maze:
     # CELL_SIZE so the maze fills the window exactly.
     # These values are manualy intialized for now until we use the conf file
     def __init__(self, config: GameConfig, level: int):
+        """ ""
+        Maze: class for Creating the maze and drawing it
+        Args:
+            config: Config class that carry the configs.
+            level: Level of the Game.
+        """
         pygame.init()
         # Dementions just for try my part
         # feel free to change them since this is ur part
@@ -62,9 +68,29 @@ class Maze:
             pygame.display.flip()
 
     def is_inside(self, x: int, y: int) -> bool:
+        """Func for Checking if the cordinate inside the
+            maze
+
+        Args:
+            x: the corddinate x.
+            y: the cordinate y.
+
+        Returns:
+            return true if its inside the maze False if not.
+        """
         return 0 <= x < self.columns and 0 <= y < self.rows
 
     def can_move(self, x: int, y: int, direction: int) -> bool:
+        """Check if its possible to Move into that Direction
+
+        Args:
+            x: corddinate of x.
+            y: corddinate of y.
+            direction: Direction.
+
+        Returns:
+            True if can move into that dir false if nah.
+        """
         if not self.is_inside(x, y):
             return False
         return not (self.maze[y][x] & direction)
@@ -72,6 +98,7 @@ class Maze:
     # U should give me this method but u didn't to let me see the fkn maze
     # this methode same as run_ui
     def draw_maze(self) -> None:
+        """Draw the Maze"""
         for y, row in enumerate(self.maze):
             for x, cell in enumerate(row):
                 self.draw.draw_maze(x, y, cell, color38, 2)
