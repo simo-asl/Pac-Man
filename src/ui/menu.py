@@ -23,7 +23,11 @@ class Menu:
     def select(self) -> str:
         return self.options[self.selected]
 
-    def draw_menu(self):
+    def draw_menu(self, width: int, height: int):
+        self.draw.screen.fill((0, 0, 0))
+        t = self.draw.load_image("src/game/assets/backgrounds/main_menu.png")
+        resu = pygame.transform.scale(t, (width, height))
+        self.draw.draw_image(resu, 0, 0)
         title_y = self.height // 8
         self.draw.draw_text(
             "PAC-MAN", self.width // 2, title_y, self.title_size, (255, 220, 50), True
@@ -42,17 +46,20 @@ class Menu:
                 color,
                 10,
             )
-            text = f"▶  {op}" if i == self.selected else f"  {op}"
+            text = f"▶{op}" if i == self.selected else f"  {op}"
             self.draw.draw_text(
                 text, self.width // 2, menu_start_y, self.options_size, color, True
             )
             menu_start_y += self.spacing
+        return self.select()
 
 
 import pygame
 
 pygame.init()
-screen = pygame.display.set_mode()
+screen_width = 1200
+screen_height = 1000
+screen = pygame.display.set_mode([screen_width, screen_height])
 clock = pygame.time.Clock()
 draw = Draw(screen, 20)
 
@@ -73,8 +80,7 @@ while rununing:
                 action = menu.select()
                 print(action)
 
-    screen.fill((5, 8, 20))
-    menu.draw_menu()
+    g = menu.draw_menu(screen_width, screen_height)
     pygame.display.flip()
     clock.tick(60)
 pygame.quit()
