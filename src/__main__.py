@@ -17,6 +17,7 @@ try:
     parser = Parser("config.json")
     level = 0
     maze = Maze(parser.parser(), level)
+
     screen = maze.screen
     tim = time.monotonic()
     time_mode_delay = 0.3
@@ -30,8 +31,20 @@ try:
         maze.WI,
         maze.HE,
     )
+    player_spawn = (player.x, player.y)
     draw = Draw(screen)
     game = Game(screen, maze.WI, maze.HE)
+    positions = maze.get_walkable_positions()
+    corners = [positions[0], positions[maze.columns - 1],
+               positions[-maze.columns], positions[-1]]
+    for corner in corners:
+        if corner in positions:
+            positions.remove(corner)
+    if player_spawn in positions:
+        positions.remove(player_spawn)
+
+    pacgums = game.create_pacgums(positions)
+    superpacgums = game.create_super_pacgums(corners)
     ghosts = GhostsManager(draw, maze, player)
     ghosts.create_ghost(
         10,
@@ -71,18 +84,27 @@ try:
                 sys.exit()
 
         player.move(maze)
-
+        for pacgum in pacgums:
+            game.collision(player, pacgum)
+        for super in superpacgums:
+            game.collision(player, super)
         player.update_power()
 
         screen.fill((0, 0, 0))
         maze.draw_maze()
-
+        for pacgum in pacgums:
+            pacgum.draw(screen)
+        for super in superpacgums:
+            super.draw(screen)
         player.draw(screen)
         player_grid = maze.pixel_to_grid(player.x, player.y)
         ghosts.move_all()
         ghosts.draw_all()
-        ghosts.frighten_all()
-
+        if player.powered_up:
+            ghosts.frighten_all()
+        else:
+            ghosts.restore_all()
+        ghosts.check_collisions()
         pygame.display.flip()
         clock.tick(60)
 except Exception as e:
