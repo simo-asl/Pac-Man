@@ -38,11 +38,23 @@ class Draw:
         if cell & 8:
             self.draw_vertical_line(x, y, y2, color, thickness)
 
-    def draw_circle(self, center_x: int, center_y: int, radius: int, color) -> None:
+    def draw_circle(
+        self,
+        center_x: int,
+        center_y: int,
+        radius: int,
+        color: tuple[int, int, int],
+    ) -> None:
+        width, height = self.screen.get_size()
+
         for y in range(center_y - radius, center_y + radius + 1):
             for x in range(center_x - radius, center_x + radius + 1):
+                if not (0 <= x < width and 0 <= y < height):
+                    continue
+
                 dx = x - center_x
                 dy = y - center_y
+
                 if dx * dx + dy * dy <= radius * radius:
                     self.screen.set_at((x, y), color)
 
