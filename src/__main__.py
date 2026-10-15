@@ -101,7 +101,6 @@ try:
             ghosts.frighten_all()
         else:
             ghosts.restore_all()
-        ghosts.check_collisions()
         pygame.display.flip()
         clock.tick(60)
 except Exception as e:
