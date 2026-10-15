@@ -84,10 +84,7 @@ try:
                 sys.exit()
 
         player.move(maze)
-        for pacgum in pacgums:
-            game.collision(player, pacgum)
-        for super in superpacgums:
-            game.collision(player, super)
+        game.check_all_collisions(player, superpacgums, pacgums, ghosts)
         player.update_power()
 
         screen.fill((0, 0, 0))

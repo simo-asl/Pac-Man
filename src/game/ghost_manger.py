@@ -102,17 +102,6 @@ class GhostsManager:
 
         return dx * dx + dy * dy <= colleesion_radis**2
 
-    def check_collisions(self) -> None:
-        # hadi usiha back t3ref imta t9as pacmen o lplayer
-        for ghost in self.ghosts:
-            if not self.is_collesion(ghost):
-                continue
-
-            if ghost.mode == "frightened":
-                ghost.get_eaten()
-            elif ghost.mode == "chase" and not self.player.invincible:
-                self.player.lose_life()
-
     def move_ghost(
         self,
         ghost: Ghost,

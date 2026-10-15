@@ -1,5 +1,6 @@
 from .player import Player
 from .pacgum import Pacgum, SuperPacgum
+from .ghost_manger import GhostsManager
 import pygame
 
 
@@ -74,3 +75,22 @@ class Game:
             self.add_score(pacgum.points)
             if isinstance(pacgum, SuperPacgum):
                 player.activate_power()
+
+    def check_all_collisions(self, player: Player, superpacgums: SuperPacgum,
+                             pacgums: Pacgum, ghosts: GhostsManager) -> None:
+        for pacgum in pacgums:
+            self.collision(player, pacgum)
+
+        for superpac in superpacgums:
+            self.collision(player, superpac)
+
+        for ghost in ghosts.ghosts:
+            if not ghosts.is_collesion(ghost):
+                continue
+
+            if ghost.mode == "frightened":
+                ghost.get_eaten()
+            elif ghost.mode == "chase" and not player.invincible:
+                player.lose_life()
+
+
