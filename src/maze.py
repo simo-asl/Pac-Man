@@ -135,9 +135,4 @@ class Maze:
 
         return postions
 
-    # hadi t7tek flwest didnt test it 3yit wlh ;(
-    def get_spawn_position(self) -> tuple[int, int]:
-        x = self.columns // 2
-        y = self.rows // 2
 
-        return self.grid_to_pixel(x, y)
