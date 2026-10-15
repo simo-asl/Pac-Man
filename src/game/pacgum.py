@@ -1,4 +1,5 @@
 import pygame
+from ..ui import Draw
 
 
 # To add PacGums, we need the get_walkable_positions() method from Maze
@@ -26,13 +27,8 @@ class Pacgum:
 
     def draw(self, screen: pygame.Surface) -> None:
         if not self.eaten:
-            pygame.draw.circle(
-                screen,
-                self.color,
-                (self.x, self.y),
-                self.radius
-            )
-
+            draw = Draw(screen)
+            draw.draw_circle(self.x, self.y, self.radius, self.color)
 
 class SuperPacgum(Pacgum):
 

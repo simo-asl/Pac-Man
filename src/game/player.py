@@ -1,5 +1,5 @@
 import pygame
-
+from ..ui import Draw
 # all initialized vars are temp for the beta version
 # so i'll update them once u parse the fkn conf file
 # read the comments u will find them funny and hopefully helpful
@@ -33,6 +33,12 @@ class Player:
         self.invincible: bool = False
         # TODO ADD IT THIS FOR GHOSTS |
         self.direction: int = 2
+        self.images = {
+            1: pygame.image.load("assets/pacman/pacman_up_open.png").convert_alpha(),
+            2: pygame.image.load("assets/pacman/pacman_right_open.png").convert_alpha(),
+            4: pygame.image.load("assets/pacman/pacman_down_open.png").convert_alpha(),
+            8: pygame.image.load("assets/pacman/pacman_left_open.png").convert_alpha(),
+        }
 
     def dead(self) -> None:
         self.alive = False
@@ -92,4 +98,7 @@ class Player:
             self.y -= min(self.speed, self.y - self.target_y)
 
     def draw(self, screen: pygame.Surface) -> None:
-        pygame.draw.circle(screen, self.color, (self.x, self.y), self.radius)
+
+        image = self.images[self.direction]
+        rect = image.get_rect(center=(self.x, self.y))
+        screen.blit(image, rect)
