@@ -13,7 +13,6 @@ from .ui import Draw
 try:
     if len(sys.argv) != 2:
         raise Exception("U should add just Arg")
-    # parser = Parser(sys.argv[1])
     parser = Parser("config.json")
     level = 0
     maze = Maze(parser.parser(), level)
@@ -82,7 +81,6 @@ try:
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-
         player.move(maze)
         game.check_all_collisions(player, superpacgums, pacgums, ghosts)
         player.update_power()
