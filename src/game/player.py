@@ -29,15 +29,14 @@ class Player:
         self.power_duration: int = 10000
         self.target_x: int = x
         self.target_y: int = y
-        self.color: tuple[int, int, int] = (255, 255, 0)
         self.invincible: bool = False
         # TODO ADD IT THIS FOR GHOSTS |
         self.direction: int = 2
         self.images = {
-            1: pygame.image.load("assets/pacman/pacman_up_open.png").convert_alpha(),
-            2: pygame.image.load("assets/pacman/pacman_right_open.png").convert_alpha(),
-            4: pygame.image.load("assets/pacman/pacman_down_open.png").convert_alpha(),
-            8: pygame.image.load("assets/pacman/pacman_left_open.png").convert_alpha(),
+            1: pygame.image.load("src/game/assets/pacman/pacman_up_open.png").convert_alpha(),
+            2: pygame.image.load("src/game/assets/pacman/pacman_right_open.png").convert_alpha(),
+            4: pygame.image.load("src/game/assets/pacman/pacman_down_open.png").convert_alpha(),
+            8: pygame.image.load("src/game/assets/pacman/pacman_left_open.png").convert_alpha(),
         }
 
     def dead(self) -> None:

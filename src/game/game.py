@@ -50,7 +50,7 @@ class Game:
 
         return super_pacgums
 
-    def collision(self, player: Player, pacgum: Pacgum) -> None:
+    def collision(self, player: Player, pacgum: list[Pacgum]) -> None:
         dx = player.x - pacgum.x
         dy = player.y - pacgum.y
 
@@ -64,8 +64,8 @@ class Game:
                 if isinstance(pacgum, SuperPacgum):
                     player.activate_power()
 
-    def check_all_collisions(self, player: Player, superpacgums: SuperPacgum,
-                             pacgums: Pacgum, ghosts: GhostsManager) -> None:
+    def check_all_collisions(self, player: Player, superpacgums: list[SuperPacgum],
+                             pacgums: list[Pacgum], ghosts: GhostsManager) -> None:
         for pacgum in pacgums:
             self.collision(player, pacgum)
 
