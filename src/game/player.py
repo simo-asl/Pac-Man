@@ -34,12 +34,14 @@ class Player:
         # TODO ADD IT THIS FOR GHOSTS |
         self.direction: int = 2
 
+    def dead(self) -> None:
+        self.alive = False
+
     def lose_life(self) -> None:
 
         if self.lives > 0:
             self.lives -= 1
         if self.lives <= 0:
-            # FIXME no self.dead
             self.dead()
 
     def add_life(self) -> None:
@@ -57,11 +59,6 @@ class Player:
             if pygame.time.get_ticks() - self.power_start_time >= self.power_duration:
                 self.powered_up = False
 
-    # the current movement mechanism is working with the arrow keys
-    # i'm not sure if they expect us to reproduce the original pac-man movement
-    # In the original game Pac-Man keeps moving after the arrow key is released
-    # Even if u release the arrow button the player will continue
-    # and only stops when he reaches a wall
     def move(self, maze) -> None:
         keys = pygame.key.get_pressed()
 
