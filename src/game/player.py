@@ -1,8 +1,5 @@
 import pygame
 from ..ui import Draw
-# all initialized vars are temp for the beta version
-# so i'll update them once u parse the fkn conf file
-# read the comments u will find them funny and hopefully helpful
 
 
 class Player:
@@ -38,6 +35,8 @@ class Player:
             4: pygame.image.load("src/game/assets/pacman/pacman_down_open.png").convert_alpha(),
             8: pygame.image.load("src/game/assets/pacman/pacman_left_open.png").convert_alpha(),
         }
+        self.death_time: int = 0
+        self.paused: bool = False
 
     def dead(self) -> None:
         self.alive = False
@@ -101,3 +100,17 @@ class Player:
         image = self.images[self.direction]
         rect = image.get_rect(center=(self.x, self.y))
         screen.blit(image, rect)
+
+    def start_death(self) -> None:
+        if self.paused:
+            return
+        self.paused = True
+        self.death_time = pygame.time.get_ticks()
+
+    def update_death(self) -> None:
+        if not self.paused:
+            return
+
+        now = pygame.time.get_ticks()
+        if now - self.death_time >= 1000:
+            self.paused = False

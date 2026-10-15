@@ -50,7 +50,7 @@ class Game:
 
         return super_pacgums
 
-    def collision(self, player: Player, pacgum: list[Pacgum]) -> None:
+    def collision(self, player: Player, pacgum: Pacgum) -> None:
         dx = player.x - pacgum.x
         dy = player.y - pacgum.y
 
