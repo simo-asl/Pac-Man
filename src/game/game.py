@@ -66,6 +66,10 @@ class Game:
 
     def check_all_collisions(self, player: Player, superpacgums: list[SuperPacgum],
                              pacgums: list[Pacgum], ghosts: GhostsManager) -> None:
+        
+        if self.paused or not player.alive:
+            return
+        
         for pacgum in pacgums:
             self.collision(player, pacgum)
 
@@ -80,4 +84,32 @@ class Game:
                 ghost.get_eaten()
             elif ghost.mode == "chase" and not player.invincible:
                 player.lose_life()
+                if player.alive:
+                    self.start_death()
+                break
+
+    def start_death(self) -> None:
+        if self.paused:
+            return
+        self.paused = True
+        self.death_time = pygame.time.get_ticks()
+
+    def update_death(self, player: Player, ghosts: GhostsManager) -> None:
+        if not self.paused:
+            return
+
+        now = pygame.time.get_ticks()
+        if now - self.death_time >= 1000:
+            self.reset_positions(player, ghosts)
+            self.paused = False
+
+    def reset_positions(self, player: Player, ghosts: GhostsManager):
+        
+        player.x, player.y = player.respawn
+        player.target_x, player.target_y = player.respawn
+        for ghost in ghosts.ghosts:
+            ghost.respawn()
+        player.powered_up = False
+
+        
 
