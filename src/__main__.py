@@ -81,24 +81,35 @@ try:
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-        player.move(maze)
-        game.check_all_collisions(player, superpacgums, pacgums, ghosts)
-        player.update_power()
+
+        game.update_death(player, ghosts)
+
+        if not game.paused and player.alive:
+            player.move(maze)
+            player.update_power()
+
+            if player.powered_up:
+                ghosts.frighten_all()
+            else:
+                ghosts.restore_all()
+
+            ghosts.move_all()
+            game.check_all_collisions(
+                player, superpacgums, pacgums, ghosts
+            )
 
         screen.fill((0, 0, 0))
         maze.draw_maze()
+
         for pacgum in pacgums:
             pacgum.draw(screen)
-        for super in superpacgums:
-            super.draw(screen)
+
+        for superpac in superpacgums:
+            superpac.draw(screen)
+
         player.draw(screen)
-        player_grid = maze.pixel_to_grid(player.x, player.y)
-        ghosts.move_all()
         ghosts.draw_all()
-        if player.powered_up:
-            ghosts.frighten_all()
-        else:
-            ghosts.restore_all()
+
         pygame.display.flip()
         clock.tick(60)
 except Exception as e:
