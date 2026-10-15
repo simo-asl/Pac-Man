@@ -110,8 +110,8 @@ class GhostsManager:
 
             if ghost.mode == "frightened":
                 ghost.get_eaten()
-            # if ghost.mode == "chase":
-            # hna player ymot
+            elif ghost.mode == "chase" and not self.player.invincible:
+                self.player.lose_life()
 
     def move_ghost(
         self,
