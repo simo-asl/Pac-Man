@@ -94,7 +94,6 @@ try:
         game.update_death(player, ghosts)
         if not game.manual_pause and game.level_time_remaining() == 0:
             player.dead()
-            print("U are dead")
 
         if not game.paused and not game.manual_pause and player.alive:
             player.move(maze)
