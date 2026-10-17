@@ -10,11 +10,12 @@ class Player:
         s_width: int = 900,
         s_height: int = 900,
         speed: int = 7,
+        lives: int = 3,
     ):
 
         self.x: int = x
         self.y: int = y
-        self.lives: int = 3
+        self.lives: int = lives
         self.radius: int = radius
         self.s_width: int = s_width
         self.s_height: int = s_height
