@@ -3,10 +3,20 @@ from .pacgum import Pacgum, SuperPacgum
 from .ghost_manger import GhostsManager
 import pygame
 
+from ..parsing import GameConfig
+
 
 class Game:
-    def __init__(self, screen: pygame.Surface, s_width: int = 900, s_height: int = 900):
+    def __init__(
+        self,
+        screen: pygame.Surface,
+        s_width: int = 900,
+        s_height: int = 900,
+        config: GameConfig | None = None,
+    ) -> None:
 
+        self.config = config if config is not None else GameConfig()
+        self.level_start_time = pygame.time.get_ticks()
         self.score: int = 0
         self.s_height: int = s_height
         self.s_width: int = s_width
@@ -33,12 +43,24 @@ class Game:
 
     def next_level(self) -> None:
         self.level += 1
+        self.level_start_time = pygame.time.get_ticks()
 
-    def create_pacgums(self, pos: list[tuple[int, int]]) -> list[Pacgum]:
+    def level_time_remaining(self) -> int:
+        elapsed = (pygame.time.get_ticks() - self.level_start_time) // 1000
+        return max(0, self.config.level_max_time - elapsed)
+
+    def create_pacgums(
+        self, pos: list[tuple[int, int]], count: int | None = None
+    ) -> list[Pacgum]:
 
         pacgums = []
-        for x, y in pos:
-            pacgums.append(Pacgum(x, y, 3))
+        requested = self.config.pacgum if count is None else count
+        count_to_place = min(max(0, requested), len(pos))
+        # Spread dots across the maze rather than filling its first cells.
+        selected = [pos[i * len(pos) // count_to_place]
+                    for i in range(count_to_place)] if count_to_place else []
+        for x, y in selected:
+            pacgums.append(Pacgum(x, y, 3, self.config.points_per_pacgum))
         return pacgums
 
     def create_super_pacgums(self, pos: list[tuple[int, int]]) -> list[SuperPacgum]:
@@ -46,7 +68,7 @@ class Game:
         super_pacgums: list[SuperPacgum] = []
 
         for x, y in pos:
-            super_pacgums.append(SuperPacgum(x, y))
+            super_pacgums.append(SuperPacgum(x, y, self.config.points_per_super_pacgum))
 
         return super_pacgums
 
@@ -82,6 +104,7 @@ class Game:
 
             if ghost.mode == "frightened":
                 ghost.get_eaten()
+                self.add_score(self.config.points_per_ghost)
             elif ghost.mode == "chase" and not player.invincible:
                 player.lose_life()
                 if player.alive:
