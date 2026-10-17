@@ -15,7 +15,8 @@ try:
         raise Exception("U should add just Arg")
     parser = Parser("config.json")
     level = 0
-    maze = Maze(parser.parser(), level)
+    config = parser.parser()
+    maze = Maze(config, level)
 
     screen = maze.screen
     tim = time.monotonic()
@@ -29,10 +30,11 @@ try:
         10,
         maze.WI,
         maze.HE,
+        lives=config.lives,
     )
     player_spawn = (player.x, player.y)
     draw = Draw(screen)
-    game = Game(screen, maze.WI, maze.HE)
+    game = Game(screen, maze.WI, maze.HE, config=config)
     positions = maze.get_walkable_positions()
     corners = [positions[0], positions[maze.columns - 1],
                positions[-maze.columns], positions[-1]]
@@ -42,7 +44,7 @@ try:
     if player_spawn in positions:
         positions.remove(player_spawn)
 
-    pacgums = game.create_pacgums(positions)
+    pacgums = game.create_pacgums(positions, config.pacgum)
     superpacgums = game.create_super_pacgums(corners)
     ghosts = GhostsManager(draw, maze, player)
     ghosts.create_ghost(
@@ -83,6 +85,8 @@ try:
                 sys.exit()
 
         game.update_death(player, ghosts)
+        if game.level_time_remaining() == 0:
+            player.dead()
 
         if not game.paused and player.alive:
             player.move(maze)
