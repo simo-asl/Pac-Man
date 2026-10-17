@@ -26,7 +26,7 @@ class Maze:
         config: GameConfig,
         draw,
         level: int,
-        ht: tuple[int, int],
+        window: tuple[int, int],
     ):
         """ ""
         Maze: class for Creating the maze and drawing it
@@ -34,14 +34,12 @@ class Maze:
             config: Config class that carry the configs.
             level: Level of the Game.
         """
-        # Dementions just for try my part
-        # feel free to change them since this is ur part
         self.columns = config.levels[level].width
         self.rows = config.levels[level].height
-        self.CELL_SIZE = min((ht[0] // self.columns), (ht[1] // self.rows))
+        self.CELL_SIZE = min((window[0] // self.columns), (window[1] // self.rows))
 
-        self.WI = self.columns * self.CELL_SIZE * 2
-        self.HE = self.rows * self.CELL_SIZE * 2
+        self.WI = self.columns * self.CELL_SIZE
+        self.HE = self.rows * self.CELL_SIZE
 
         if level == 0:
             self.maze_init = MazeGenerator((self.columns, self.rows), seed=42)
@@ -84,14 +82,6 @@ class Maze:
         if not self.is_inside(x, y):
             return False
         return not (self.maze[y][x] & direction)
-
-    # U should give me this method but u didn't to let me see the fkn maze
-    # this methode same as run_ui
-    def draw_maze(self) -> None:
-        """Draw the Maze"""
-        for y, row in enumerate(self.maze):
-            for x, cell in enumerate(row):
-                self.draw.draw_maze(x, y, cell, color38, 2)
 
     def get_available_moves(self, x: int, y: int) -> list[tuple[int, int]]:
         paths = []
