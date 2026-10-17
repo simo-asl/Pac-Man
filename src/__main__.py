@@ -45,7 +45,7 @@ try:
         positions.remove(player_spawn)
 
     pacgums = game.create_pacgums(positions, config.pacgum)
-    superpacgums = game.create_super_pacgums(corners)
+    superpacgums = game.create_superpac(corners)
     ghosts = GhostsManager(draw, maze, player)
     ghosts.create_ghost(
         10,

@@ -2,6 +2,7 @@ from .player import Player
 from .pacgum import Pacgum, SuperPacgum
 from .ghost_manger import GhostsManager
 import pygame
+import random
 
 from ..parsing import GameConfig
 
@@ -17,6 +18,7 @@ class Game:
 
         self.config = config if config is not None else GameConfig()
         self.level_start_time = pygame.time.get_ticks()
+        self.total_pause_time = 0
         self.score: int = 0
         self.s_height: int = s_height
         self.s_width: int = s_width
@@ -42,33 +44,53 @@ class Game:
         return True
 
     def next_level(self) -> None:
+
         self.level += 1
         self.level_start_time = pygame.time.get_ticks()
+        self.total_pause_time = 0
 
     def level_time_remaining(self) -> int:
-        elapsed = (pygame.time.get_ticks() - self.level_start_time) // 1000
-        return max(0, self.config.level_max_time - elapsed)
+
+        now = pygame.time.get_ticks()
+
+        if self.paused:
+            now = self.death_time
+
+        elapsed = now - self.level_start_time - self.total_pause_time
+
+        remaining = self.config.level_max_time - elapsed // 1000
+
+        return max(0, remaining)
 
     def create_pacgums(
-        self, pos: list[tuple[int, int]], count: int | None = None
+        self,
+        positions: list[tuple[int, int]]
     ) -> list[Pacgum]:
 
         pacgums = []
-        requested = self.config.pacgum if count is None else count
-        count_to_place = min(max(0, requested), len(pos))
-        # Spread dots across the maze rather than filling its first cells.
-        selected = [pos[i * len(pos) // count_to_place]
-                    for i in range(count_to_place)] if count_to_place else []
+
+        count = min(self.config.pacgum, len(positions))
+
+        selected = random.sample(positions, count)
+
         for x, y in selected:
-            pacgums.append(Pacgum(x, y, 3, self.config.points_per_pacgum))
+            pacgum = Pacgum(
+                x,
+                y,
+                3,
+                self.config.points_per_pacgum
+            )
+            pacgums.append(pacgum)
+
         return pacgums
 
-    def create_super_pacgums(self, pos: list[tuple[int, int]]) -> list[SuperPacgum]:
+    def create_superpac(self, pos: list[tuple[int, int]]) -> list[SuperPacgum]:
 
         super_pacgums: list[SuperPacgum] = []
 
         for x, y in pos:
-            super_pacgums.append(SuperPacgum(x, y, self.config.points_per_super_pacgum))
+            super_pacgums.append(
+                SuperPacgum(x, y, self.config.points_per_super_pacgum))
 
         return super_pacgums
 
@@ -86,12 +108,14 @@ class Game:
                 if isinstance(pacgum, SuperPacgum):
                     player.activate_power()
 
-    def check_all_collisions(self, player: Player, superpacgums: list[SuperPacgum],
-                             pacgums: list[Pacgum], ghosts: GhostsManager) -> None:
-        
+    def check_all_collisions(self, player: Player,
+                             superpacgums: list[SuperPacgum],
+                             pacgums: list[Pacgum],
+                             ghosts: GhostsManager) -> None:
+
         if self.paused or not player.alive:
             return
-        
+
         for pacgum in pacgums:
             self.collision(player, pacgum)
 
@@ -118,21 +142,26 @@ class Game:
         self.death_time = pygame.time.get_ticks()
 
     def update_death(self, player: Player, ghosts: GhostsManager) -> None:
+
         if not self.paused:
             return
 
         now = pygame.time.get_ticks()
+
         if now - self.death_time >= 1000:
+
+            pause_duration = now - self.death_time
+
+            self.total_pause_time += pause_duration
+
             self.reset_positions(player, ghosts)
+
             self.paused = False
 
-    def reset_positions(self, player: Player, ghosts: GhostsManager):
-        
+    def reset_positions(self, player: Player, ghosts: GhostsManager) -> None:
+
         player.x, player.y = player.respawn
         player.target_x, player.target_y = player.respawn
         for ghost in ghosts.ghosts:
             ghost.respawn()
         player.powered_up = False
-
-        
-
