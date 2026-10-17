@@ -7,6 +7,7 @@ from .game.game import Game
 from .game.ghost_manger import GhostsManager
 from .game.player import Player
 from .maze import Maze
+from .game.cheats import Cheats
 from .parsing import Parser
 from .ui import Draw
 
@@ -78,11 +79,14 @@ try:
         (0, maze.rows - 1),
         "clyde",
     )
+    cheats = Cheats(player, game, ghosts)
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                cheats.handle_key(event.key)
 
         game.update_death(player, ghosts)
         if game.level_time_remaining() == 0:

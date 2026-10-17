@@ -14,6 +14,7 @@ class GhostsManager:
         self.draw = draw
         self.maze = maze
         self.player = player
+        self.frozen = False
 
     def create_ghost(
         self,
@@ -148,6 +149,9 @@ class GhostsManager:
     def move_all(
         self,
     ) -> None:
+
+        if self.frozen:
+            return
         for ghost in self.ghosts:
             if not ghost.is_at_target():
                 continue
