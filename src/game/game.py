@@ -162,7 +162,7 @@ class Game:
             self.manual_pause = False
         else:
             self.manual_pause = True
-            self.manual_pause = now
+            self.manual_pause_start = now
 
     def update_death(self, player: Player, ghosts: GhostsManager) -> None:
 
