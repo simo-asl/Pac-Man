@@ -21,4 +21,3 @@ class Cheats:
             self.ghosts.frozen = not self.ghosts.frozen
         elif key == pygame.K_l:
             self.player.add_life()
-

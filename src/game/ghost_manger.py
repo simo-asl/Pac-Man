@@ -25,7 +25,8 @@ class GhostsManager:
         kind: str = "blinky",
         speed: int = 2,
     ) -> None:
-        ghost = Ghost(x, y, self.maze, self.draw, direction, corner, kind, speed)
+        ghost = Ghost(x, y, self.maze, self.draw, direction,
+                      corner, kind, speed)
         self.ghosts.append(ghost)
 
     def choose_next_tile(
@@ -41,7 +42,8 @@ class GhostsManager:
             return reverse if reverse in moves else None
         res = {}
         for x, y in forward_moves:
-            edisition_formuala = math.sqrt((target[0] - x) ** 2 + (target[1] - y) ** 2)
+            edisition_formuala = math.sqrt(
+                (target[0] - x) ** 2 + (target[1] - y) ** 2)
             res[(x, y)] = edisition_formuala
         best_pos = min(res, key=lambda pos: res[pos])
         return best_pos
@@ -112,9 +114,11 @@ class GhostsManager:
             if ghost.kind == "blinky":
                 target = player_pos
             elif ghost.kind == "pinky":
-                target = self.get_pinky_target(player_pos, self.player.direction)
+                target = self.get_pinky_target(
+                    player_pos, self.player.direction)
             elif ghost.kind == "inky":
-                blinky = next((g for g in self.ghosts if g.kind == "blinky"), None)
+                blinky = next(
+                    (g for g in self.ghosts if g.kind == "blinky"), None)
                 if blinky is None:
                     return
                 target = self.get_inky_target(
@@ -162,6 +166,8 @@ class GhostsManager:
             ghost.draw_ghost()
 
     def update_all(self):
+        if self.frozen:
+            return
         for ghost in self.ghosts:
             ghost.update()
 
