@@ -3,6 +3,8 @@ import time
 
 import pygame
 
+from src.ui.menu import Menu
+
 from .game.game import Game
 from .game.ghost_manger import GhostsManager
 from .game.player import Player
@@ -15,9 +17,12 @@ try:
         raise Exception("U should add just Arg")
     parser = Parser("config.json")
     level = 0
-    maze = Maze(parser.parser(), level)
+    ht = (1800, 1200)
+    screen = pygame.display.set_mode(ht)
+    draw = Draw(screen)
+    maze = Maze(parser.parser(), draw, level, ht)
+    menu = Menu(draw)
 
-    screen = maze.screen
     tim = time.monotonic()
     time_mode_delay = 0.3
 
@@ -31,11 +36,14 @@ try:
         maze.HE,
     )
     player_spawn = (player.x, player.y)
-    draw = Draw(screen)
     game = Game(screen, maze.WI, maze.HE)
     positions = maze.get_walkable_positions()
-    corners = [positions[0], positions[maze.columns - 1],
-               positions[-maze.columns], positions[-1]]
+    corners = [
+        positions[0],
+        positions[maze.columns - 1],
+        positions[-maze.columns],
+        positions[-1],
+    ]
     for corner in corners:
         if corner in positions:
             positions.remove(corner)
@@ -76,17 +84,18 @@ try:
         (0, maze.rows - 1),
         "clyde",
     )
+    screen.fill((0, 0, 0))
+    second = pygame.Surface((ht[0], ht[1]))
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+        menu.menu_game(maze)
         player.move(maze)
         game.check_all_collisions(player, superpacgums, pacgums, ghosts)
         player.update_power()
 
-        screen.fill((0, 0, 0))
-        maze.draw_maze()
         for pacgum in pacgums:
             pacgum.draw(screen)
         for super in superpacgums:

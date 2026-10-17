@@ -4,8 +4,7 @@ import pygame
 
 
 class Draw:
-    def __init__(self, screen: pygame.Surface, cell_size: int = 20):
-        self.CELL_SIZE = cell_size
+    def __init__(self, screen: pygame.Surface):
         self.screen: pygame.Surface = screen
         pygame.font.init()
 
@@ -14,6 +13,11 @@ class Draw:
     ) -> None:
         for offset in range(thickness):
             for x in range(start_x, end_x):
+                if not (
+                    0 <= x < self.screen.get_width()
+                    and 0 <= y + offset < self.screen.get_height()
+                ):
+                    continue
                 self.screen.set_at((x, y + offset), color)
 
     def draw_vertical_line(
@@ -21,13 +25,28 @@ class Draw:
     ) -> None:
         for offset in range(thickness):
             for y in range(start_y, end_y):
+                if not (
+                    0 <= x + offset < self.screen.get_width()
+                    and 0 <= y < self.screen.get_height()
+                ):
+                    continue
                 self.screen.set_at((x + offset, y), color)
 
-    def draw_maze(self, cell_x, cell_y, cell, color, thickness=1) -> None:
-        x = cell_x * self.CELL_SIZE
-        y = cell_y * self.CELL_SIZE
-        x2 = x + self.CELL_SIZE
-        y2 = y + self.CELL_SIZE
+    def draw_maze(
+        self,
+        cell_x: int,
+        cell_y: int,
+        cell: int,
+        color: tuple[int, int, int],
+        cell_size: int,
+        thickness=1,
+        offset_x: int = 0,
+        offset_y: int = 0,
+    ) -> None:
+        x = cell_x * cell_size + offset_x
+        y = cell_y * cell_size + offset_y
+        x2 = x + cell_size
+        y2 = y + cell_size
 
         if cell & 1:
             self.draw_horizontal_line(x, y, x2, color, thickness)
