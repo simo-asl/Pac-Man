@@ -44,7 +44,7 @@ try:
     if player_spawn in positions:
         positions.remove(player_spawn)
 
-    pacgums = game.create_pacgums(positions, config.pacgum)
+    pacgums = game.create_pacgums(positions)
     superpacgums = game.create_superpac(corners)
     ghosts = GhostsManager(draw, maze, player)
     ghosts.create_ghost(
@@ -101,6 +101,7 @@ try:
             game.check_all_collisions(
                 player, superpacgums, pacgums, ghosts
             )
+            ghosts.update_all()
 
         screen.fill((0, 0, 0))
         maze.draw_maze()

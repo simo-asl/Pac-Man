@@ -155,8 +155,11 @@ class GhostsManager:
 
     def draw_all(self):
         for ghost in self.ghosts:
-            ghost.update()
             ghost.draw_ghost()
+
+    def update_all(self):
+        for ghost in self.ghosts:
+            ghost.update()
 
     def frighten_all(self) -> None:
         for ghost in self.ghosts:
