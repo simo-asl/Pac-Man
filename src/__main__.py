@@ -29,15 +29,15 @@ try:
 
     clock = pygame.time.Clock()
 
+    player_spawn = maze.grid_to_pixel(5, 5)
     player = Player(
-        5 * maze.CELL_SIZE + maze.CELL_SIZE // 2,
-        5 * maze.CELL_SIZE + maze.CELL_SIZE // 2,
+        player_spawn[0],
+        player_spawn[1],
         10,
         maze.WI,
         maze.HE,
         lives=config.lives,
     )
-    player_spawn = (player.x, player.y)
     game = Game(screen, maze.WI, maze.HE, config=config)
     positions = maze.get_walkable_positions()
     corners = [
@@ -99,6 +99,7 @@ try:
                 else:
                     cheats.handle_key(event.key)
 
+        menu.menu_game(maze)
         game.update_death(player, ghosts)
         if not game.manual_pause and game.level_time_remaining() == 0:
             player.dead()
@@ -113,12 +114,8 @@ try:
                 ghosts.restore_all()
 
             ghosts.move_all()
-            game.check_all_collisions(
-                player, superpacgums, pacgums, ghosts
-            )
+            game.check_all_collisions(player, superpacgums, pacgums, ghosts)
             ghosts.update_all()
-
-        menu.menu_game(maze)
 
         for pacgum in pacgums:
             pacgum.draw(draw)

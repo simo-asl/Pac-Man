@@ -32,30 +32,44 @@ class Menu:
         return self.options[self.selected]
 
     def one_draw_maze(
-        self, maze: Maze, thinkeess: int = 5, offset_x: int = 0, offest_y: int = 0
+        self, maze: Maze, thinkeess: int = 5, offset_x: int = 0, offset_y: int = 0
     ):
         for y, row in enumerate(maze.maze):
             for x, cell in enumerate(row):
                 self.draw.draw_maze(
-                    x + offset_x,
-                    y + offest_y,
+                    x,
+                    y,
                     cell,
                     (255, 220, 50),
                     maze.CELL_SIZE,
                     thinkeess,
+                    offset_x,
+                    offset_y,
                 )
 
     def menu_game(self, maze: Maze, thinkeess: int = 5, level: int = 0):
-        offset_x = (self.width - maze.WI) // 2
-        offset_y = (self.height - maze.HE) // 2
+        offset_x = getattr(maze, "offset_x", (self.width - maze.WI) // 2)
+        offset_y = getattr(maze, "offset_y", (self.height - maze.HE) // 2)
         if not self.maze_created[level]:
             t = pygame.Surface((self.width, self.height))
-            self.one_draw_maze(maze, thinkeess, offset_x, offset_y)
+            surface_draw = Draw(t)
+            for y, row in enumerate(maze.maze):
+                for x, cell in enumerate(row):
+                    surface_draw.draw_maze(
+                        x,
+                        y,
+                        cell,
+                        (255, 220, 50),
+                        maze.CELL_SIZE,
+                        thinkeess,
+                        offset_x,
+                        offset_y,
+                    )
             self.maze_created[level] = True
-            t.blit(self.draw.screen, (0, 0))
             self.cache[level] = t
-        else:
-            self.draw.draw_image(self.cache[level], 0, 0)
+
+        self.draw.screen.fill((0, 0, 0))
+        self.draw.draw_image(self.cache[level], 0, 0)
         self.draw.draw_text(
             f">> Level {level} <<", (self.width // 5) * 4 - 150, 10, 80, (255, 220, 50)
         )
@@ -88,42 +102,43 @@ class Menu:
             menu_start_y += self.spacing
 
 
-pygame.init()
-screen_width = 1500
-screen_height = 1200
-screen = pygame.display.set_mode([screen_width, screen_height])
-clock = pygame.time.Clock()
-draw = Draw(screen)
-from ..parsing import Parser
-
-pa = Parser("config.json")
-maze = Maze(pa.parser(), draw, 0, (screen_width, screen_height))
-pygame.display.set_caption("Pac-Man")
-menu = Menu(draw)
-rununing = True
-
-
-menu.draw_menu()
-action = None
-while rununing:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            rununing = False
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_UP:
-                menu.move_selection(-1)
-            elif event.key == pygame.K_DOWN:
-                menu.move_selection(1)
-            elif event.key == pygame.K_RETURN:
-                action = menu.select()
-        if action:
-            match action:
-                case "START GAME":
-                    screen.fill((0, 0, 0))
-                    menu.one_draw_maze(maze)
-                case _:
-                    action = None
-
-    pygame.display.flip()
-    clock.tick(60)
-pygame.quit()
+#
+# pygame.init()
+# screen_width = 1500
+# screen_height = 1200
+# screen = pygame.display.set_mode([screen_width, screen_height])
+# clock = pygame.time.Clock()
+# draw = Draw(screen)
+# from ..parsing import Parser
+#
+# pa = Parser("config.json")
+# maze = Maze(pa.parser(), draw, 0, (screen_width, screen_height))
+# pygame.display.set_caption("Pac-Man")
+# menu = Menu(draw)
+# rununing = True
+#
+#
+# menu.draw_menu()
+# action = None
+# while rununing:
+#     for event in pygame.event.get():
+#         if event.type == pygame.QUIT:
+#             rununing = False
+#         elif event.type == pygame.KEYDOWN:
+#             if event.key == pygame.K_UP:
+#                 menu.move_selection(-1)
+#             elif event.key == pygame.K_DOWN:
+#                 menu.move_selection(1)
+#             elif event.key == pygame.K_RETURN:
+#                 action = menu.select()
+#         if action:
+#             match action:
+#                 case "START GAME":
+#                     screen.fill((0, 0, 0))
+#                     menu.one_draw_maze(maze)
+#                 case _:
+#                     action = None
+#
+#     pygame.display.flip()
+#     clock.tick(60)
+# pygame.quit()

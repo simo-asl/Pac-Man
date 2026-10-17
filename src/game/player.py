@@ -66,8 +66,7 @@ class Player:
         keys = pygame.key.get_pressed()
 
         if self.x == self.target_x and self.y == self.target_y:
-            cell_x = self.x // maze.CELL_SIZE
-            cell_y = self.y // maze.CELL_SIZE
+            cell_x, cell_y = maze.pixel_to_grid(self.x, self.y)
 
             if keys[pygame.K_LEFT] and maze.can_move(cell_x, cell_y, 8):
                 self.target_x -= maze.CELL_SIZE

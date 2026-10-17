@@ -25,8 +25,8 @@ class Maze:
         self,
         config: GameConfig,
         draw,
-        level: int,
-        window: tuple[int, int],
+        level: int = 0,
+        window: tuple[int, int] | None = None,
     ):
         """ ""
         Maze: class for Creating the maze and drawing it
@@ -36,10 +36,18 @@ class Maze:
         """
         self.columns = config.levels[level].width
         self.rows = config.levels[level].height
+        if window is None:
+            if hasattr(draw, "screen") and draw.screen is not None:
+                window = (draw.screen.get_width(), draw.screen.get_height())
+            else:
+                window = (1800, 1200)
+
         self.CELL_SIZE = min((window[0] // self.columns), (window[1] // self.rows))
 
         self.WI = self.columns * self.CELL_SIZE
         self.HE = self.rows * self.CELL_SIZE
+        self.offset_x = (window[0] - self.WI) // 2
+        self.offset_y = (window[1] - self.HE) // 2
 
         if level == 0:
             self.maze_init = MazeGenerator((self.columns, self.rows), seed=42)
@@ -95,12 +103,30 @@ class Maze:
 
     def grid_to_pixel(self, x: int, y: int) -> tuple[int, int]:
         return (
-            x * self.CELL_SIZE + self.CELL_SIZE // 2,
-            y * self.CELL_SIZE + self.CELL_SIZE // 2,
+            self.offset_x + x * self.CELL_SIZE + self.CELL_SIZE // 2,
+            self.offset_y + y * self.CELL_SIZE + self.CELL_SIZE // 2,
         )
 
     def pixel_to_grid(self, x: int, y: int) -> tuple[int, int]:
-        return (x // self.CELL_SIZE, y // self.CELL_SIZE)
+        return (
+            (x - self.offset_x) // self.CELL_SIZE,
+            (y - self.offset_y) // self.CELL_SIZE,
+        )
+
+    def draw_maze(self, color=(255, 220, 50), thickness: int = 5) -> None:
+        """Draw the Maze"""
+        for y, row in enumerate(self.maze):
+            for x, cell in enumerate(row):
+                self.draw.draw_maze(
+                    x,
+                    y,
+                    cell,
+                    color,
+                    self.CELL_SIZE,
+                    thickness,
+                    self.offset_x,
+                    self.offset_y,
+                )
 
     # We need this method to get the center pos if each walkable cell
     # So Game can place pacgums bla depending on Maze internals

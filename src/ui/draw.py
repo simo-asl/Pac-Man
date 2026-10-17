@@ -49,13 +49,13 @@ class Draw:
         y2 = y + cell_size
 
         if cell & 1:
-            self.draw_horizontal_line(x, y, x2, color, thickness)
+            self.draw_horizontal_line(x, y, x2 + thickness, color, thickness)
         if cell & 2:
-            self.draw_vertical_line(x2, y, y2, color, thickness)
+            self.draw_vertical_line(x2, y, y2 + thickness, color, thickness)
         if cell & 4:
-            self.draw_horizontal_line(x, y2, x2, color, thickness)
+            self.draw_horizontal_line(x, y2, x2 + thickness, color, thickness)
         if cell & 8:
-            self.draw_vertical_line(x, y, y2, color, thickness)
+            self.draw_vertical_line(x, y, y2 + thickness, color, thickness)
 
     def draw_circle(
         self,
