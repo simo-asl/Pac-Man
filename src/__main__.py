@@ -14,7 +14,7 @@ from .ui import Draw
 try:
     if len(sys.argv) != 2:
         raise Exception("U should add just Arg")
-    parser = Parser("config.json")
+    parser = Parser(sys.argv[1])
     level = 0
     config = parser.parser()
     maze = Maze(config, level)
@@ -87,13 +87,14 @@ try:
                 sys.exit()
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_p:
-                    game.toggle_pause()
-                else: 
+                    game.toggle_pause(player)
+                else:
                     cheats.handle_key(event.key)
 
         game.update_death(player, ghosts)
-        if game.level_time_remaining() == 0:
+        if not game.manual_pause and game.level_time_remaining() == 0:
             player.dead()
+            print("U are dead")
 
         if not game.paused and not game.manual_pause and player.alive:
             player.move(maze)

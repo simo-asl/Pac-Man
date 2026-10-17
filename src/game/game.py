@@ -146,18 +146,23 @@ class Game:
         self.paused = True
         self.death_time = pygame.time.get_ticks()
 
-    def toggle_pause(self) -> None:
+    def toggle_pause(self, player: Player):
         if self.paused:
             return
-
         now = pygame.time.get_ticks()
 
         if self.manual_pause:
-            self.total_pause_time += now - self.manual_pause_start
+            duration = now - self.manual_pause_start
+
+            self.total_pause_time += duration
+
+            if player.powered_up:
+                player.power_start_time += duration
+
             self.manual_pause = False
         else:
-            self.manual_pause_start = now
             self.manual_pause = True
+            self.manual_pause = now
 
     def update_death(self, player: Player, ghosts: GhostsManager) -> None:
 
@@ -175,9 +180,6 @@ class Game:
             self.reset_positions(player, ghosts)
 
             self.paused = False
-
-    def toggle_pause(self):
-        self.manual_pause = not self.manual_pause
 
     def reset_positions(self, player: Player, ghosts: GhostsManager) -> None:
 
