@@ -69,7 +69,8 @@ class Game:
 
         pacgums = []
 
-        count = min(self.config.pacgum, len(positions))
+        minimum = len(positions) * 70 // 100
+        count = max(minimum, min(self.config.pacgum, len(positions)))
 
         selected = random.sample(positions, count)
 

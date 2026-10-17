@@ -107,10 +107,10 @@ try:
         maze.draw_maze()
 
         for pacgum in pacgums:
-            pacgum.draw(screen)
+            pacgum.draw(draw)
 
         for superpac in superpacgums:
-            superpac.draw(screen)
+            superpac.draw(draw)
 
         player.draw(screen)
         ghosts.draw_all()
