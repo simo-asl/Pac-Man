@@ -1,7 +1,6 @@
 import pygame
 from ..ui import Draw
 
-
 class Player:
     def __init__(
         self,
@@ -11,11 +10,12 @@ class Player:
         s_width: int = 900,
         s_height: int = 900,
         speed: int = 7,
+        lives: int = 3,
     ):
 
         self.x: int = x
         self.y: int = y
-        self.lives: int = 3
+        self.lives: int = lives
         self.radius: int = radius
         self.s_width: int = s_width
         self.s_height: int = s_height
@@ -27,6 +27,7 @@ class Player:
         self.target_x: int = x
         self.target_y: int = y
         self.invincible: bool = False
+        self.respawn = (x, y)
         # TODO ADD IT THIS FOR GHOSTS |
         self.direction: int = 2
         self.images = {
@@ -35,8 +36,6 @@ class Player:
             4: pygame.image.load("src/game/assets/pacman/pacman_down_open.png").convert_alpha(),
             8: pygame.image.load("src/game/assets/pacman/pacman_left_open.png").convert_alpha(),
         }
-        self.death_time: int = 0
-        self.paused: bool = False
 
     def dead(self) -> None:
         self.alive = False
@@ -100,17 +99,3 @@ class Player:
         image = self.images[self.direction]
         rect = image.get_rect(center=(self.x, self.y))
         screen.blit(image, rect)
-
-    def start_death(self) -> None:
-        if self.paused:
-            return
-        self.paused = True
-        self.death_time = pygame.time.get_ticks()
-
-    def update_death(self) -> None:
-        if not self.paused:
-            return
-
-        now = pygame.time.get_ticks()
-        if now - self.death_time >= 1000:
-            self.paused = False

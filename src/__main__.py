@@ -3,24 +3,25 @@ import time
 
 import pygame
 
-from src.ui.menu import Menu
-
+from .game.cheats import Cheats
 from .game.game import Game
 from .game.ghost_manger import GhostsManager
 from .game.player import Player
 from .maze import Maze
 from .parsing import Parser
 from .ui import Draw
+from .ui.menu import Menu
 
 try:
     if len(sys.argv) != 2:
         raise Exception("U should add just Arg")
-    parser = Parser("config.json")
+    parser = Parser(sys.argv[1])
     level = 0
+    config = parser.parser()
     ht = (1800, 1200)
     screen = pygame.display.set_mode(ht)
     draw = Draw(screen)
-    maze = Maze(parser.parser(), draw, level, ht)
+    maze = Maze(config, draw, level, ht)
     menu = Menu(draw)
 
     tim = time.monotonic()
@@ -34,9 +35,10 @@ try:
         10,
         maze.WI,
         maze.HE,
+        lives=config.lives,
     )
     player_spawn = (player.x, player.y)
-    game = Game(screen, maze.WI, maze.HE)
+    game = Game(screen, maze.WI, maze.HE, config=config)
     positions = maze.get_walkable_positions()
     corners = [
         positions[0],
@@ -51,7 +53,7 @@ try:
         positions.remove(player_spawn)
 
     pacgums = game.create_pacgums(positions)
-    superpacgums = game.create_super_pacgums(corners)
+    superpacgums = game.create_superpac(corners)
     ghosts = GhostsManager(draw, maze, player)
     ghosts.create_ghost(
         10,
@@ -85,29 +87,48 @@ try:
         "clyde",
     )
     screen.fill((0, 0, 0))
-    second = pygame.Surface((ht[0], ht[1]))
+    cheats = Cheats(player, game, ghosts)
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_p:
+                    game.toggle_pause(player)
+                else:
+                    cheats.handle_key(event.key)
+
+        game.update_death(player, ghosts)
+        if not game.manual_pause and game.level_time_remaining() == 0:
+            player.dead()
+
+        if not game.paused and not game.manual_pause and player.alive:
+            player.move(maze)
+            player.update_power()
+
+            if player.powered_up:
+                ghosts.frighten_all()
+            else:
+                ghosts.restore_all()
+
+            ghosts.move_all()
+            game.check_all_collisions(
+                player, superpacgums, pacgums, ghosts
+            )
+            ghosts.update_all()
+
         menu.menu_game(maze)
-        player.move(maze)
-        game.check_all_collisions(player, superpacgums, pacgums, ghosts)
-        player.update_power()
 
         for pacgum in pacgums:
-            pacgum.draw(screen)
-        for super in superpacgums:
-            super.draw(screen)
+            pacgum.draw(draw)
+
+        for superpac in superpacgums:
+            superpac.draw(draw)
+
         player.draw(screen)
-        player_grid = maze.pixel_to_grid(player.x, player.y)
-        ghosts.move_all()
         ghosts.draw_all()
-        if player.powered_up:
-            ghosts.frighten_all()
-        else:
-            ghosts.restore_all()
+
         pygame.display.flip()
         clock.tick(60)
 except Exception as e:
