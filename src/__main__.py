@@ -86,13 +86,16 @@ try:
                 pygame.quit()
                 sys.exit()
             elif event.type == pygame.KEYDOWN:
-                cheats.handle_key(event.key)
+                if event.key == pygame.K_p:
+                    game.toggle_pause()
+                else: 
+                    cheats.handle_key(event.key)
 
         game.update_death(player, ghosts)
         if game.level_time_remaining() == 0:
             player.dead()
 
-        if not game.paused and player.alive:
+        if not game.paused and not game.manual_pause and player.alive:
             player.move(maze)
             player.update_power()
 

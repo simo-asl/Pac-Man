@@ -26,6 +26,8 @@ class Game:
         self.screen: pygame.Surface = screen
         self.death_time = 0
         self.paused = False
+        self.manual_pause = False
+        self.manual_pause_start = 0
 
     def add_score(self, add: int) -> None:
 
@@ -53,7 +55,9 @@ class Game:
 
         now = pygame.time.get_ticks()
 
-        if self.paused:
+        if self.manual_pause:
+            now = self.manual_pause_start
+        elif self.paused:
             now = self.death_time
 
         elapsed = now - self.level_start_time - self.total_pause_time
@@ -114,7 +118,7 @@ class Game:
                              pacgums: list[Pacgum],
                              ghosts: GhostsManager) -> None:
 
-        if self.paused or not player.alive:
+        if self.paused or self.manual_pause or not player.alive:
             return
 
         for pacgum in pacgums:
@@ -142,6 +146,19 @@ class Game:
         self.paused = True
         self.death_time = pygame.time.get_ticks()
 
+    def toggle_pause(self) -> None:
+        if self.paused:
+            return
+
+        now = pygame.time.get_ticks()
+
+        if self.manual_pause:
+            self.total_pause_time += now - self.manual_pause_start
+            self.manual_pause = False
+        else:
+            self.manual_pause_start = now
+            self.manual_pause = True
+
     def update_death(self, player: Player, ghosts: GhostsManager) -> None:
 
         if not self.paused:
@@ -158,6 +175,9 @@ class Game:
             self.reset_positions(player, ghosts)
 
             self.paused = False
+
+    def toggle_pause(self):
+        self.manual_pause = not self.manual_pause
 
     def reset_positions(self, player: Player, ghosts: GhostsManager) -> None:
 
