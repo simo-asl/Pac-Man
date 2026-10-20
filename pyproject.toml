@@ -7,7 +7,12 @@ authors = [
     { name = "tlaghzal", email = "laghzaltarik0@gmail.com" }
 ]
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "mazegenerator",
+    "pydantic>=2.14.1",
+    "pygame>=2.6.1",
+    "vendor>=0.1",
+]
 
 [project.scripts]
 pac-man = "pac_man:main"
@@ -15,3 +20,6 @@ pac-man = "pac_man:main"
 [build-system]
 requires = ["uv_build>=0.12.15,<0.13.0"]
 build-backend = "uv_build"
+
+[tool.uv.sources]
+mazegenerator = { path = "mazegenerator-2.1.0-py3-none-any.whl" }

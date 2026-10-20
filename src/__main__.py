@@ -88,43 +88,63 @@ try:
     )
     screen.fill((0, 0, 0))
     cheats = Cheats(player, game, ghosts)
+    action = None
+    menu.draw_menu()
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_p:
-                    game.toggle_pause(player)
+                # if action is None:
+                #     if event.key == pygame.K_p:
+                #         game.toggle_pause(player)
+                #     else:
+                #         cheats.handle_key(event.key)
+                # else:
+                if event.key == pygame.K_DOWN:
+                    menu.move_selection(1)
+                    menu.draw_menu()
+                elif event.key == pygame.K_UP:
+                    menu.move_selection(-1)
+                    menu.draw_menu()
+                elif event.key == pygame.K_RETURN:
+                    action = menu.select()
+            if action:
+                match action:
+                    case "START GAME":
+                        screen.fill((0, 0, 0))
+                        menu.menu_game(maze)
+                    case _:
+                        action = None
+        if action == "START GAME":
+            screen.fill((0, 0, 0))
+            menu.menu_game(maze)
+            game.update_death(player, ghosts)
+            if not game.manual_pause and game.level_time_remaining() == 0:
+                player.dead()
+
+            if not game.paused and not game.manual_pause and player.alive:
+                player.move(maze)
+                player.update_power()
+
+                if player.powered_up:
+                    ghosts.frighten_all()
                 else:
-                    cheats.handle_key(event.key)
+                    ghosts.restore_all()
 
-        menu.menu_game(maze)
-        game.update_death(player, ghosts)
-        if not game.manual_pause and game.level_time_remaining() == 0:
-            player.dead()
+                ghosts.move_all()
+                game.check_all_collisions(player, superpacgums, pacgums, ghosts)
+                ghosts.update_all()
 
-        if not game.paused and not game.manual_pause and player.alive:
-            player.move(maze)
-            player.update_power()
+            for pacgum in pacgums:
+                pacgum.draw(draw)
 
-            if player.powered_up:
-                ghosts.frighten_all()
-            else:
-                ghosts.restore_all()
+            for superpac in superpacgums:
+                superpac.draw(draw)
 
-            ghosts.move_all()
-            game.check_all_collisions(player, superpacgums, pacgums, ghosts)
-            ghosts.update_all()
-
-        for pacgum in pacgums:
-            pacgum.draw(draw)
-
-        for superpac in superpacgums:
-            superpac.draw(draw)
-
-        player.draw(screen)
-        ghosts.draw_all()
+            player.draw(screen)
+            ghosts.draw_all()
 
         pygame.display.flip()
         clock.tick(60)

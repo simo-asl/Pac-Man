@@ -15,12 +15,6 @@ DIRECTIONS = {
 
 
 class Maze:
-    # Beta layout:
-    # The previous version used a fixed 800x600 window and calculated the maze
-    # size from it, which created a rectangular maze with unused screen space.
-    # For now, we use a square 25x25 maze and calculate the window size from
-    # CELL_SIZE so the maze fills the window exactly.
-    # These values are manualy intialized for now until we use the conf file
     def __init__(
         self,
         config: GameConfig,
@@ -128,8 +122,6 @@ class Maze:
                     self.offset_y,
                 )
 
-    # We need this method to get the center pos if each walkable cell
-    # So Game can place pacgums bla depending on Maze internals
     def get_walkable_positions(self) -> list[tuple[int, int]]:
         postions = []
         for row_idx, row in enumerate(self.maze):

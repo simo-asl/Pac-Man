@@ -102,7 +102,6 @@ class Menu:
             menu_start_y += self.spacing
 
 
-#
 # pygame.init()
 # screen_width = 1500
 # screen_height = 1200
