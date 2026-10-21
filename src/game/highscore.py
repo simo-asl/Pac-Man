@@ -63,7 +63,7 @@ class High:
             return high_score(scores=valid_scores[:10])
 
         except (OSError, UnicodeError, ValidationError) as error:
-            print(f"Error loading highscores: {error}")
+            print(f"Warning: Cannot load highscores: {error}")
             return high_score(scores=[])
 
     def save_highscore(self, data: high_score) -> bool:
