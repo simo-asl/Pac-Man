@@ -1,5 +1,6 @@
 import pygame
 
+from ..game import score
 from ..maze import Maze
 from .draw import Draw
 
@@ -71,3 +72,52 @@ class Menu:
                 text, self.width // 2, menu_start_y, self.options_size, color, True
             )
             menu_start_y += self.spacing
+
+    def draw_highscore(self, scores: list[score]) -> None:
+        self.draw.screen.fill((0, 0, 0))
+        high_h = 150
+        self.draw.draw_text(
+            "HighScore",
+            (self.width // 2),
+            int(self.height * 0.05),
+            90,
+            (155, 255, 252),
+            centre=True,
+        )
+        t = 0
+        space = (self.height * 0.07) + self.height // 9
+        for i, s in enumerate(scores):
+            self.draw.draw_text(
+                f"{i + 1}--{s.name}:",
+                (self.width // 2) - 50,
+                (250) + t,
+                43,
+                (244, 244, 244),
+                True,
+            )
+            self.draw.draw_text(
+                str(s.score),
+                (self.width // 2) + 50,
+                (250) + t,
+                43,
+                (244, 244, 244),
+                True,
+            )
+            t += 50
+
+
+t = []
+a = 50
+for i in range(10):
+    t.append(score(name="tar", score=193 + a))
+    a += 50
+
+
+pygame.init()
+a = pygame.display.set_mode((1200, 1800))
+
+d = Draw(a)
+menu = Menu(d)
+while True:
+    menu.draw_highscore(t)
+    pygame.display.flip()
