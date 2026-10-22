@@ -1,5 +1,5 @@
 import pygame
-from ..ui import Draw
+
 
 class Player:
     def __init__(
@@ -31,10 +31,18 @@ class Player:
         # TODO ADD IT THIS FOR GHOSTS |
         self.direction: int = 2
         self.images = {
-            1: pygame.image.load("src/game/assets/pacman/pacman_up_open.png").convert_alpha(),
-            2: pygame.image.load("src/game/assets/pacman/pacman_right_open.png").convert_alpha(),
-            4: pygame.image.load("src/game/assets/pacman/pacman_down_open.png").convert_alpha(),
-            8: pygame.image.load("src/game/assets/pacman/pacman_left_open.png").convert_alpha(),
+            1: pygame.image.load(
+                "src/game/assets/pacman/pacman_up_open.png"
+            ).convert_alpha(),
+            2: pygame.image.load(
+                "src/game/assets/pacman/pacman_right_open.png"
+            ).convert_alpha(),
+            4: pygame.image.load(
+                "src/game/assets/pacman/pacman_down_open.png"
+            ).convert_alpha(),
+            8: pygame.image.load(
+                "src/game/assets/pacman/pacman_left_open.png"
+            ).convert_alpha(),
         }
 
     def dead(self) -> None:

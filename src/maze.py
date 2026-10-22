@@ -36,7 +36,9 @@ class Maze:
             else:
                 window = (1800, 1200)
 
-        self.CELL_SIZE = min((window[0] // self.columns), (window[1] // self.rows))
+        self.CELL_SIZE = int(
+            min((window[0] // self.columns), (window[1] // self.rows)) * 0.80
+        )
 
         self.WI = self.columns * self.CELL_SIZE
         self.HE = self.rows * self.CELL_SIZE

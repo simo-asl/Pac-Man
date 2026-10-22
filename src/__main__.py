@@ -114,12 +114,12 @@ try:
                 match action:
                     case "START GAME":
                         screen.fill((0, 0, 0))
-                        menu.menu_game(maze)
+                        menu.menu_game(maze, player, game.score)
                     case _:
                         action = None
         if action == "START GAME":
             screen.fill((0, 0, 0))
-            menu.menu_game(maze)
+            menu.menu_game(maze, player, game.score)
             game.update_death(player, ghosts)
             if not game.manual_pause and game.level_time_remaining() == 0:
                 player.dead()
