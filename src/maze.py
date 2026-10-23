@@ -28,6 +28,7 @@ class Maze:
             config: Config class that carry the configs.
             level: Level of the Game.
         """
+        # TODO handle the caase iiiif there is less tehen 10 levels 
         self.columns = config.levels[level].width
         self.rows = config.levels[level].height
         if window is None:
