@@ -1,6 +1,9 @@
-import pygame
+from __future__ import annotations
 
-from ..game_controller import GameController
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..game_controller import GameController
 from .menu import Menu
 from .state import GameState
 
@@ -10,69 +13,22 @@ class StateMachine:
         self.menu = menu
         self.game = game
         self.state = GameState.MENU
+        self.objects = {
+            GameState.HIGHSCORES: self.menu,
+            GameState.PLAYING: self.game,
+            GameState.PAUSED: self.game,
+            GameState.INSTRUCTIONS: self.menu,
+            GameState.GAME_OVER: self.game,
+            GameState.NAME_INPUT: self.menu,
+            GameState.LEVEL_COMPLETE: self.game,
+            GameState.VICTORY: self.menu,
+            GameState.MENU: self.menu,
+        }
+        self.running = True
 
-    # def select(self, )
     def change_state(self, new_state: GameState) -> None:
         self.state = new_state
 
-    def handle_menu_event(self, event: pygame.event.Event) -> None:
-        if event.key == pygame.K_DOWN:
-            self.menu.move_selection(1)
-
-        elif event.key == pygame.K_UP:
-            self.menu.move_selection(-1)
-
-        elif event.key == pygame.K_RETURN:
-            action = self.menu.select()
-
-            match action:
-                case "START GAME":
-                    self.game.start_game()
-
-                case "HIGHSCORES":
-                    self.change_state(GameState.HIGHSCORES)
-
-                case "INSTRUCTIONS":
-                    self.change_state(GameState.INSTRUCTIONS)
-
-                case "EXIT":
-                    self.running = False
-
-        elif event.key == pygame.K_ESCAPE:
-            self.running = False
-
-    def handle_event(self, event: pygame.event.Event) -> None:
-        if event.type == pygame.QUIT:
-            self.running = False
-            return
-
-        if event.type != pygame.KEYDOWN:
-            return
-
-        match self.state:
-            case GameState.MENU:
-                self.handle_menu_event(event)
-
-            case GameState.PLAYING:
-                self.handle_playing_event(event)
-
-            case GameState.PAUSED:
-                self.handle_paused_event(event)
-
-            case GameState.HIGHSCORES:
-                self.handle_highscores_event(event)
-
-            case GameState.INSTRUCTIONS:
-                self.handle_instructions_event(event)
-
-            case GameState.GAME_OVER:
-                self.handle_game_over_event(event)
-
-            case GameState.NAME_INPUT:
-                self.handle_name_input_event(event)
-
-            case GameState.LEVEL_COMPLETE:
-                self.handle_level_complete_event(event)
-
-    def run(self):
-        self.select
+    def run_state(self, keys, **kwargs):
+        scene = self.objects[self.state]
+        scene.run(self.state, keys, **kwargs)

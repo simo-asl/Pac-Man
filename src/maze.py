@@ -109,21 +109,6 @@ class Maze:
             (y - self.offset_y) // self.CELL_SIZE,
         )
 
-    def draw_maze(self, color=(255, 220, 50), thickness: int = 5) -> None:
-        """Draw the Maze"""
-        for y, row in enumerate(self.maze):
-            for x, cell in enumerate(row):
-                self.draw.draw_maze(
-                    x,
-                    y,
-                    cell,
-                    color,
-                    self.CELL_SIZE,
-                    thickness,
-                    self.offset_x,
-                    self.offset_y,
-                )
-
     def get_walkable_positions(self) -> list[tuple[int, int]]:
         postions = []
         for row_idx, row in enumerate(self.maze):

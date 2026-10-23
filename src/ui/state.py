@@ -10,3 +10,4 @@ class GameState(Enum):
     GAME_OVER = auto()
     NAME_INPUT = auto()
     LEVEL_COMPLETE = auto()
+    VICTORY = auto()

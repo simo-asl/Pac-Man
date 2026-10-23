@@ -4,6 +4,8 @@ import pygame
 
 from .game_controller import GameController
 from .parsing import Parser
+from .ui import Draw, Menu
+from .ui.state_machine import StateMachine
 
 
 def main() -> None:
@@ -19,19 +21,32 @@ def main() -> None:
         screen = pygame.display.set_mode((1800, 1200))
         pygame.display.set_caption("Pac-Man")
 
-        controller = GameController(screen, config)
         clock = pygame.time.Clock()
 
-        while controller.running:
-            for event in pygame.event.get():
-                controller.handle_event(event)
+        draw = Draw(screen)
+        menu = Menu(draw)
+        game = GameController(screen, config)
 
-            controller.update()
-            controller.draw()
+        machine = StateMachine(menu, game)
+
+        menu.set_machine(machine)
+        game.set_machine(machine)
+        while machine.running:
+            events = pygame.event.get()
+
+            for event in events:
+                if event.type == pygame.QUIT:
+                    machine.running = False
+
+            if not machine.running:
+                break
+
+            machine.run_state(events)
 
             pygame.display.flip()
             clock.tick(60)
 
+        pygame.quit()
     except Exception as error:
         print(f"Error: {error}")
 

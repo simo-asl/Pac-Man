@@ -1,8 +1,15 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import pygame
 
-from ..game import score
-from ..maze import Maze
+if TYPE_CHECKING:
+    from ..game.highscore import score
+    from .state_machine import StateMachine
+
 from .draw import Draw
+from .state import GameState
 
 
 class Menu:
@@ -21,6 +28,7 @@ class Menu:
             "EXIT",
         ]
         self.t = self.draw.load_image("src/game/assets/backgrounds/main_menu.png")
+        self.machine = None
 
         self.resu = pygame.transform.scale(self.t, (self.width, self.height))
 
@@ -29,22 +37,6 @@ class Menu:
 
     def select(self) -> str:
         return self.options[self.selected]
-
-    def one_draw_maze(
-        self, maze: Maze, thinkeess: int = 5, offset_x: int = 0, offset_y: int = 0
-    ):
-        for y, row in enumerate(maze.maze):
-            for x, cell in enumerate(row):
-                self.draw.draw_maze(
-                    x,
-                    y,
-                    cell,
-                    (255, 220, 50),
-                    maze.CELL_SIZE,
-                    thinkeess,
-                    offset_x,
-                    offset_y,
-                )
 
     def draw_menu(self):
         self.draw.screen.fill((0, 0, 0))
@@ -79,13 +71,13 @@ class Menu:
         self.draw.draw_text(
             "HighScore",
             (self.width // 2),
-            int(self.height * 0.05),
+            high_h,
             90,
             (155, 255, 252),
             centre=True,
         )
         t = 0
-        space = (self.height * 0.07) + self.height // 9
+        space = int((self.height * 0.07) + self.height // 9)
         for i, s in enumerate(scores):
             self.draw.draw_text(
                 f"{i + 1}--{s.name}:",
@@ -103,4 +95,103 @@ class Menu:
                 (244, 244, 244),
                 True,
             )
-            t += 50
+            t += space
+
+    def set_machine(self, state_machine: StateMachine):
+        self.machine = state_machine
+
+    def _handle_menu_keys(self, event: pygame.event.Event):
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_UP:
+                self.move_selection(-1)
+            elif event.key == pygame.K_DOWN:
+                self.move_selection(1)
+            elif event.key == pygame.K_RETURN:
+                selected = self.select()
+                if self.machine is None:
+                    return
+                if selected == "START GAME":
+                    self.machine.change_state(GameState.PLAYING)
+                elif selected == "HIGHSCORES":
+                    self.machine.change_state(GameState.HIGHSCORES)
+                elif selected == "INSTRUCTIONS":
+                    self.machine.change_state(GameState.INSTRUCTIONS)
+                else:
+                    self.machine.running = False
+
+    def handle_keys(
+        self,
+        state: GameState,
+        event: pygame.event.Event,
+    ) -> None:
+        if event.type != pygame.KEYDOWN:
+            return
+        if self.machine is None:
+            return
+        match state:
+            case GameState.MENU:
+                if event.key == pygame.K_UP:
+                    self.move_selection(-1)
+
+                elif event.key == pygame.K_DOWN:
+                    self.move_selection(1)
+
+                elif event.key == pygame.K_RETURN:
+                    selected = self.select()
+
+                    if selected == "START GAME":
+                        self.machine.game.start_game()
+
+                    elif selected == "HIGHSCORES":
+                        self.machine.change_state(GameState.HIGHSCORES)
+
+                    elif selected == "INSTRUCTIONS":
+                        self.machine.change_state(GameState.INSTRUCTIONS)
+
+                    elif selected == "EXIT":
+                        self.machine.running = False
+
+            case GameState.HIGHSCORES | GameState.INSTRUCTIONS:
+                if event.key == pygame.K_ESCAPE:
+                    self.machine.change_state(GameState.MENU)
+
+            case GameState.NAME_INPUT:
+                if event.key == pygame.K_BACKSPACE:
+                    self.player_name = self.player_name[:-1]
+
+                elif event.key == pygame.K_RETURN:
+                    if self.player_name.strip():
+                        self.machine.change_state(GameState.HIGHSCORES)
+
+                elif (
+                    event.unicode.isascii()
+                    and (event.unicode.isalnum() or event.unicode == " ")
+                    and len(self.player_name) < 10
+                ):
+                    self.player_name += event.unicode
+
+            case GameState.VICTORY:
+                if event.key in (pygame.K_RETURN, pygame.K_ESCAPE):
+                    self.machine.change_state(GameState.MENU)
+
+    def run(
+        self,
+        state: GameState,
+        keys: list[pygame.event.Event],
+        **kwargs,
+    ) -> None:
+        for event in keys:
+            self.handle_keys(state, event)
+            if self.machine is not None and self.machine.state != state:
+                return
+        match state:
+            case GameState.HIGHSCORES:
+                self.draw_highscore(kwargs["scores"])
+            case GameState.MENU:
+                self.draw_menu()
+            case GameState.INSTRUCTIONS:
+                ...
+            case GameState.VICTORY:
+                ...
+            case GameState.NAME_INPUT:
+                ...

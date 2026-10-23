@@ -1,5 +1,6 @@
 PYTHON = python3
 SRC = src
+ARGS ?= config.json
 
 
 .PHONY: install run clean lint
