@@ -1,152 +1,43 @@
 import sys
-import time
 
 import pygame
 
-from .game.cheats import Cheats
-from .game.game import Game
-from .game.ghost_manger import GhostsManager
-from .game.player import Player
-from .maze import Maze
+from .game_controller import GameController
 from .parsing import Parser
-from .ui import Draw
-from .ui.menu import Menu
 
-try:
+
+def main() -> None:
     if len(sys.argv) != 2:
-        raise Exception("U should add just Arg")
-    parser = Parser(sys.argv[1])
-    level = 0
-    config = parser.parser()
-    ht = (1800, 1200)
-    screen = pygame.display.set_mode(ht)
-    draw = Draw(screen)
-    maze = Maze(config, draw, level, ht)
-    menu = Menu(draw)
+        print("Usage: python -m src <config_file>")
+        return
 
-    tim = time.monotonic()
-    time_mode_delay = 0.3
+    pygame.init()
 
-    clock = pygame.time.Clock()
+    try:
+        config = Parser(sys.argv[1]).parser()
 
-    player_spawn = maze.grid_to_pixel(5, 5)
-    player = Player(
-        player_spawn[0],
-        player_spawn[1],
-        10,
-        maze.WI,
-        maze.HE,
-        lives=config.lives,
-    )
-    game = Game(screen, maze.WI, maze.HE, config=config)
-    positions = maze.get_walkable_positions()
-    corners = [
-        positions[0],
-        positions[maze.columns - 1],
-        positions[-maze.columns],
-        positions[-1],
-    ]
-    for corner in corners:
-        if corner in positions:
-            positions.remove(corner)
-    if player_spawn in positions:
-        positions.remove(player_spawn)
+        screen = pygame.display.set_mode((1800, 1200))
+        pygame.display.set_caption("Pac-Man")
 
-    pacgums = game.create_pacgums(positions)
-    superpacgums = game.create_superpac(corners)
-    ghosts = GhostsManager(draw, maze, player)
-    ghosts.create_ghost(
-        10,
-        22,
-        2,
-        (maze.columns - 1, 0),
-        "blinky",
-    )
+        controller = GameController(screen, config)
+        clock = pygame.time.Clock()
 
-    ghosts.create_ghost(
-        1,
-        2,
-        2,
-        (0, 0),
-        "pinky",
-    )
+        while controller.running:
+            for event in pygame.event.get():
+                controller.handle_event(event)
 
-    ghosts.create_ghost(
-        14,
-        14,
-        1,
-        (maze.columns - 1, maze.rows - 1),
-        "inky",
-    )
+            controller.update()
+            controller.draw()
 
-    ghosts.create_ghost(
-        1,
-        maze.rows - 2,
-        2,
-        (0, maze.rows - 1),
-        "clyde",
-    )
-    screen.fill((0, 0, 0))
-    cheats = Cheats(player, game, ghosts)
-    action = None
-    menu.draw_menu()
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            elif event.type == pygame.KEYDOWN:
-                # if action is None:
-                #     if event.key == pygame.K_p:
-                #         game.toggle_pause(player)
-                #     else:
-                #         cheats.handle_key(event.key)
-                # else:
-                if event.key == pygame.K_DOWN:
-                    menu.move_selection(1)
-                    menu.draw_menu()
-                elif event.key == pygame.K_UP:
-                    menu.move_selection(-1)
-                    menu.draw_menu()
-                elif event.key == pygame.K_RETURN:
-                    action = menu.select()
-            if action:
-                match action:
-                    case "START GAME":
-                        screen.fill((0, 0, 0))
-                        menu.menu_game(maze, player, game.score)
-                    case _:
-                        action = None
-        if action == "START GAME":
-            screen.fill((0, 0, 0))
-            menu.menu_game(maze, player, game.score)
-            game.update_death(player, ghosts)
-            if not game.manual_pause and game.level_time_remaining() == 0:
-                player.dead()
+            pygame.display.flip()
+            clock.tick(60)
 
-            if not game.paused and not game.manual_pause and player.alive:
-                player.move(maze)
-                player.update_power()
+    except Exception as error:
+        print(f"Error: {error}")
 
-                if player.powered_up:
-                    ghosts.frighten_all()
-                else:
-                    ghosts.restore_all()
+    finally:
+        pygame.quit()
 
-                ghosts.move_all()
-                game.check_all_collisions(player, superpacgums, pacgums, ghosts)
-                ghosts.update_all()
 
-            for pacgum in pacgums:
-                pacgum.draw(draw)
-
-            for superpac in superpacgums:
-                superpac.draw(draw)
-
-            player.draw(screen)
-            ghosts.draw_all()
-
-        pygame.display.flip()
-        clock.tick(60)
-except Exception as e:
-    print(e)
+if __name__ == "__main__":
+    main()
