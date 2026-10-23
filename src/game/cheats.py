@@ -12,12 +12,17 @@ class Cheats:
 
         self.ghosts = ghosts
 
-    def handle_key(self, key: int) -> None:
+    def handle_key(self, key: int) -> bool:
         if key == pygame.K_i:
             self.player.toggle_invincibility()
+
         elif key == pygame.K_s:
-            self.game.next_level()
+            return True
+
         elif key == pygame.K_f:
             self.ghosts.frozen = not self.ghosts.frozen
+
         elif key == pygame.K_l:
             self.player.add_life()
+
+        return False

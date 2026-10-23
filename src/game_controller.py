@@ -211,8 +211,9 @@ class GameController:
         if event.key == pygame.K_p:
             self.game.toggle_pause(self.player)
             self.change_state(GameState.PAUSED)
-        else:
-            self.cheats.handle_key(event.key)
+
+        elif self.cheats.handle_key(event.key):
+            self.next_level()
 
     def handle_paused_event(self, event: pygame.event.Event) -> None:
         if event.key == pygame.K_p:
