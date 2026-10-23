@@ -27,10 +27,20 @@ class Menu:
             "INSTRUCTIONS",
             "EXIT",
         ]
-        self.t = self.draw.load_image("src/game/assets/backgrounds/main_menu.png")
-        self.machine = None
+        self.backgrounds = {
+            GameState.HIGHSCORES: "highscores.png",
+            GameState.INSTRUCTIONS: "instructions.png",
+            GameState.VICTORY: "victory.png",
+            GameState.NAME_INPUT: "name_input.png",
+            GameState.MENU: "main_menu.png",
+        }
+        self.images = {}
+        for state, back in self.backgrounds.items():
+            image = self.draw.load_image(f"src/game/assets/backgrounds/{back}")
+            resu = pygame.transform.scale(image, (self.width, self.height))
+            self.images[state] = resu
 
-        self.resu = pygame.transform.scale(self.t, (self.width, self.height))
+        self.machine = None
 
     def move_selection(self, direction: int) -> None:
         self.selected = (self.selected + direction) % len(self.options)
@@ -40,7 +50,7 @@ class Menu:
 
     def draw_menu(self):
         self.draw.screen.fill((0, 0, 0))
-        self.draw.draw_image(self.resu, 0, 0)
+        self.draw.draw_image(self.images[GameState.MENU], 0, 0)
         title_y = self.height // 8
         self.draw.draw_text(
             "PAC-MAN", self.width // 2, title_y, self.title_size, (255, 220, 50), True
@@ -67,6 +77,7 @@ class Menu:
 
     def draw_highscore(self, scores: list[score]) -> None:
         self.draw.screen.fill((0, 0, 0))
+        self.draw.draw_image(self.images[GameState.HIGHSCORES], 0, 0)
         high_h = 150
         self.draw.draw_text(
             "HighScore",
@@ -174,6 +185,10 @@ class Menu:
                 if event.key in (pygame.K_RETURN, pygame.K_ESCAPE):
                     self.machine.change_state(GameState.MENU)
 
+    def _draw_screen(self, state: GameState):
+        self.draw.screen.fill((0, 0, 0))
+        self.draw.draw_image(self.images[state], 0, 0)
+
     def run(
         self,
         state: GameState,
@@ -190,8 +205,8 @@ class Menu:
             case GameState.MENU:
                 self.draw_menu()
             case GameState.INSTRUCTIONS:
-                ...
+                self._draw_screen(state)
             case GameState.VICTORY:
-                ...
+                self._draw_screen(state)
             case GameState.NAME_INPUT:
-                ...
+                self._draw_screen(state)
