@@ -1,15 +1,15 @@
 import pygame
 
-from src.ui.state import GameState
-from src.ui import Draw
-from src.ui.menu import Menu
-from src.game.player import Player
-from src.maze import Maze
-from src.game.ghost_manger import GhostsManager
 from src.game import Game
 from src.game.cheats import Cheats
-from src.parsing.parser import GameConfig
+from src.game.ghost_manger import GhostsManager
 from src.game.highscore import High
+from src.game.player import Player
+from src.maze import Maze
+from src.parsing.parser import GameConfig
+from src.ui import Draw
+from src.ui.menu import Menu
+from src.ui.state import GameState
 
 
 class GameController:
@@ -84,10 +84,7 @@ class GameController:
             (0, self.maze.rows - 1),
         ]
 
-        superpac_positions = [
-            self.maze.grid_to_pixel(x, y)
-            for x, y in ghost_corners
-        ]
+        superpac_positions = [self.maze.grid_to_pixel(x, y) for x, y in ghost_corners]
 
         positions = self.maze.get_walkable_positions()
 
@@ -270,11 +267,7 @@ class GameController:
         if not self.game.manual_pause and self.game.level_time_remaining() == 0:
             self.player.dead()
 
-        if (
-            not self.game.paused
-            and not self.game.manual_pause
-            and self.player.alive
-        ):
+        if not self.game.paused and not self.game.manual_pause and self.player.alive:
             self.player.move(self.maze)
             self.player.update_power()
 
