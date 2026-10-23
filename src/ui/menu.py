@@ -104,20 +104,3 @@ class Menu:
                 True,
             )
             t += 50
-
-
-t = []
-a = 50
-for i in range(10):
-    t.append(score(name="tar", score=193 + a))
-    a += 50
-
-
-pygame.init()
-a = pygame.display.set_mode((1200, 1800))
-
-d = Draw(a)
-menu = Menu(d)
-while True:
-    menu.draw_highscore(t)
-    pygame.display.flip()
