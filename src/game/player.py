@@ -28,7 +28,6 @@ class Player:
         self.target_y: int = y
         self.invincible: bool = False
         self.respawn = (x, y)
-        # TODO ADD IT THIS FOR GHOSTS |
         self.direction: int = 2
         self.images = {
             1: pygame.image.load(

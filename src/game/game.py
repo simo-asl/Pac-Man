@@ -46,10 +46,13 @@ class Game:
         return True
 
     def next_level(self) -> None:
-
         self.level += 1
         self.level_start_time = pygame.time.get_ticks()
         self.total_pause_time = 0
+        self.paused = False
+        self.manual_pause = False
+        self.death_time = 0
+        self.manual_pause_start = 0
 
     def level_time_remaining(self) -> int:
 
