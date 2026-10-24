@@ -1,8 +1,7 @@
 from __future__ import annotations
-
 from typing import TYPE_CHECKING
-
 import pygame
+
 
 if TYPE_CHECKING:
     from ..game.highscore import score
@@ -30,13 +29,13 @@ class Menu:
         self.backgrounds = {
             GameState.HIGHSCORES: "highscores.png",
             GameState.INSTRUCTIONS: "instructions.png",
-            GameState.VICTORY: "victory.png",
+            GameState.VICTORY: "victory_image.png",
             GameState.NAME_INPUT: "name_input.png",
             GameState.MENU: "main_menu.png",
         }
         self.images = {}
         for state, back in self.backgrounds.items():
-            image = self.draw.load_image(f"src/game/assets/backgrounds/{back}")
+            image = self.draw.load_image(f"src/game/assets/better_backgrounds/{back}")
             resu = pygame.transform.scale(image, (self.width, self.height))
             self.images[state] = resu
 
