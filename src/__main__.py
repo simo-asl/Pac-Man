@@ -47,8 +47,10 @@ def main() -> None:
             clock.tick(60)
 
         pygame.quit()
-    except Exception as error:
-        print(f"Error: {error}")
+    except Exception:
+        import traceback
+
+        traceback.print_exc()
 
     finally:
         pygame.quit()

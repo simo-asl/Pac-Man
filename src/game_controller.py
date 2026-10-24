@@ -42,6 +42,11 @@ class GameController:
         self.setup_level()
 
     def setup_level(self) -> None:
+        if self.machine is None:
+            return
+        if len(self.config.levels) == self.level:
+            self.machine.change_state(GameState.VICTORY)
+            return
         self.maze = Maze(
             self.config,
             self.drawer,
