@@ -118,10 +118,6 @@ class GameController:
     def next_level(self) -> None:
         # hadi 7et lmaze zwina dyalk ma kadirch check lconfig.levels ch7al
         # une fois kaytsalaw levels kayt7sb bli khssr so 9ad chi l3ba dl victory
-        if self.level + 1 >= len(self.config.levels):
-            self.change_state(GameState.VICTORY)
-            return
-
         self.remaining_lives = self.player.lives
 
         self.game.next_level()

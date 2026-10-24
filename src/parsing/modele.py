@@ -18,5 +18,7 @@ class GameConfig(BaseModel):
 
     level_max_time: int = Field(default=90, ge=1)
     levels: list[ConfigLevel] = Field(
-        default_factory=lambda: [ConfigLevel(seed=42), ConfigLevel()]
+        default_factory=lambda: (
+            [ConfigLevel(seed=42)] + [ConfigLevel() for _ in range(9)]
+        )
     )

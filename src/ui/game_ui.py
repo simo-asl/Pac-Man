@@ -43,7 +43,7 @@ class GameUi:
         self.draw.screen.fill((0, 0, 0))
         self.draw.draw_image(self.cache[self.maze.level], 0, 0)
         self.draw.draw_text(
-            f"Level: {self.maze.level}",
+            f"Level: {self.maze.level + 1}",
             int((self.width // 5) * 4),
             25,
             80,
