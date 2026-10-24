@@ -14,23 +14,27 @@ class GameUi:
         self.maze = maze
         self.width = self.draw.screen.get_width()
         self.cache = {}
+        self.image = self.draw.load_image(
+            "src/game/assets/backgrounds/hud_background_1800x1200.png"
+        )
 
-    def menu_game(self, thinkeess: int = 5):
+    def menu_game(self):
         offset_x = getattr(self.maze, "offset_x", (self.width - self.maze.WI) // 2)
 
         offset_y = getattr(self.maze, "offset_y", (self.height - self.maze.HE) // 2)
         if not self.cache.get(self.maze.level, None):
             t = pygame.Surface((self.width, self.height))
             surface_draw = Draw(t)
+            scaled = pygame.transform.scale(self.image, (self.width, self.height))
+            # TODO should fix the maze
+            # surface_draw.draw_image(scaled, 0, 0)
             for y, row in enumerate(self.maze.maze):
                 for x, cell in enumerate(row):
                     surface_draw.draw_maze(
                         x,
                         y,
                         cell,
-                        (255, 220, 50),
                         self.maze.CELL_SIZE,
-                        thinkeess,
                         offset_x,
                         offset_y,
                     )

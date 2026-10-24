@@ -6,6 +6,7 @@ import pygame
 class Draw:
     def __init__(self, screen: pygame.Surface):
         self.screen: pygame.Surface = screen
+        self.walls = None
         pygame.font.init()
 
     def draw_horizontal_line(
@@ -32,30 +33,32 @@ class Draw:
                     continue
                 self.screen.set_at((x + offset, y), color)
 
+    def load_image(self, path: str) -> pygame.Surface:
+        return pygame.image.load(path)
+
+    def load_walls(self, cell_size: int):
+        walls = {}
+        for i in range(16):
+            wall = self.load_image(f"src/game/assets/maze/{i}.png")
+            walls[i] = pygame.transform.scale(wall, (cell_size, cell_size))
+
+        return walls
+
     def draw_maze(
         self,
         cell_x: int,
         cell_y: int,
         cell: int,
-        color: tuple[int, int, int],
         cell_size: int,
-        thickness=1,
         offset_x: int = 0,
         offset_y: int = 0,
     ) -> None:
+        if not self.walls:
+            self.walls = self.load_walls(cell_size)
         x = cell_x * cell_size + offset_x
         y = cell_y * cell_size + offset_y
-        x2 = x + cell_size
-        y2 = y + cell_size
 
-        if cell & 1:
-            self.draw_horizontal_line(x, y, x2 + thickness, color, thickness)
-        if cell & 2:
-            self.draw_vertical_line(x2, y, y2 + thickness, color, thickness)
-        if cell & 4:
-            self.draw_horizontal_line(x, y2, x2 + thickness, color, thickness)
-        if cell & 8:
-            self.draw_vertical_line(x, y, y2 + thickness, color, thickness)
+        self.draw_image(self.walls[cell], x, y)
 
     def draw_circle(
         self,
@@ -94,9 +97,6 @@ class Draw:
         self.draw_horizontal_line(x, y, x + width, color, thickness)
         self.draw_horizontal_line(x, y + height, x + width, color, thickness)
         self.draw_vertical_line(x + width, y, y + height, color, thickness)
-
-    def load_image(self, path: str) -> pygame.Surface:
-        return pygame.image.load(path)
 
     def draw_image(self, image: pygame.Surface, x: int, y: int) -> None:
         self.screen.blit(image, (x, y))
