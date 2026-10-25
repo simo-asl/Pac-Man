@@ -1,3 +1,6 @@
-from .draw import Draw
+"""Export the public ui package interface."""
 
-__all__ = ["Draw"]
+from .draw import Draw
+from .menu import Menu
+
+__all__ = ["Draw", "Menu"]

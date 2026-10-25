@@ -9,3 +9,4 @@ dist/
 build/
 *.egg-info/
 mazegenerator-00001.zip
+nvim.log

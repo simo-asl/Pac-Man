@@ -1,14 +1,21 @@
+"""Validate and persist the ten highest named scores."""
+
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 from pydantic import BaseModel, Field, ValidationError
 
 
 class score(BaseModel):
+    """Validate a named non-negative score."""
+
     name: str
     score: int = Field(ge=0, strict=True)
 
 
 class high_score(BaseModel):
+    """Represent the stored high-score list."""
+
     scores: list[score]
 
 
@@ -16,10 +23,25 @@ class High:
     """Manage persistent Pac-Man highscores."""
 
     def __init__(self, path_name: str) -> None:
+        """Initialize this object and its dependencies.
+
+        Args:
+            path_name: Path to the persistent high-score JSON file.
+
+        Returns:
+            None.
+        """
         self.path = Path(path_name)
 
     def valid_name(self, name: str) -> bool:
-        """Check whether a player name follows the subject rules."""
+        """Check whether a player name follows the subject rules.
+
+        Args:
+            name: Player name to validate, display or save.
+
+        Returns:
+            bool: True for a nonempty permitted name of at most ten characters.
+        """
         if not isinstance(name, str):
             return False
 
@@ -36,11 +58,23 @@ class High:
         return True
 
     def score_value(self, player: score) -> int:
-        """Return the score used for sorting."""
+        """Return the score used for sorting.
+
+        Args:
+            player: Validated saved score entry to compare.
+
+        Returns:
+            int: The points used to sort this saved entry.
+        """
         return player.score
 
     def load_highscore(self) -> high_score:
-        """Load highscores, handling missing or invalid files."""
+        """Load highscores, handling missing or invalid files.
+
+        Returns:
+            high_score: Validated and sorted score data, or an empty list on
+                file errors.
+        """
         try:
             if not self.path.exists():
                 return high_score(scores=[])
@@ -67,20 +101,49 @@ class High:
             return high_score(scores=[])
 
     def save_highscore(self, data: high_score) -> bool:
-        """Save highscores to a JSON file."""
-        try:
-            self.path.write_text(
-                data.model_dump_json(indent=4),
-                encoding="utf-8",
-            )
-            return True
+        """Save highscores to a JSON file.
 
+        Args:
+            data: Validated high-score data to persist.
+
+        Returns:
+            bool: True after successful replacement, or False after a file
+                error.
+        """
+        temporary: Path | None = None
+        try:
+            with NamedTemporaryFile(
+                mode="w",
+                encoding="utf-8",
+                dir=self.path.parent,
+                prefix=self.path.name + ".",
+                suffix=".tmp",
+                delete=False,
+            ) as output:
+                temporary = Path(output.name)
+                output.write(data.model_dump_json(indent=4))
+            temporary.replace(self.path)
+            return True
         except OSError as error:
             print(f"Error saving highscores: {error}")
             return False
+        finally:
+            if temporary is not None:
+                try:
+                    temporary.unlink(missing_ok=True)
+                except OSError:
+                    pass
 
     def add_score(self, name: str, points: int) -> bool:
-        """Add a valid score and keep only the top 10."""
+        """Add a valid score and keep only the top 10.
+
+        Args:
+            name: Player name to validate, display or save.
+            points: Non-negative number of points awarded or stored.
+
+        Returns:
+            bool: True if the valid name and points were saved successfully.
+        """
         if not self.valid_name(name):
             return False
 
@@ -98,6 +161,10 @@ class High:
         return self.save_highscore(data)
 
     def get_top_scores(self) -> list[score]:
-        """Return the top 10 highscores."""
+        """Return the top 10 highscores.
+
+        Returns:
+            list[score]: At most ten valid entries sorted by descending points.
+        """
         data = self.load_highscore()
         return data.scores

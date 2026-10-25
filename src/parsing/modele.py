@@ -1,14 +1,25 @@
-from pydantic import BaseModel, Field
+"""Define validated configuration fields and safe defaults."""
+
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class ConfigLevel(BaseModel):
-    width: int = Field(default=39, ge=5)
-    height: int = Field(default=29, ge=5)
+    """Define validated maze dimensions and optional seed."""
+
+    model_config = ConfigDict(strict=True, extra="ignore")
+
+    # The 2100x1800 window leaves a 1980x1380 play area: 32px minimum tiles.
+    width: int = Field(default=39, ge=15, le=61)
+    height: int = Field(default=29, ge=11, le=43)
     seed: int | None = None
 
 
 class GameConfig(BaseModel):
-    highscore_filename: str = "highscores.json"
+    """Validated gameplay settings."""
+
+    model_config = ConfigDict(strict=True, extra="ignore")
+
+    highscore_filename: str = Field(default="highscores.json", min_length=1)
     lives: int = Field(default=3, ge=1)
     pacgum: int = Field(default=42, ge=0)
 
@@ -18,5 +29,8 @@ class GameConfig(BaseModel):
 
     level_max_time: int = Field(default=90, ge=1)
     levels: list[ConfigLevel] = Field(
-        default_factory=lambda: [ConfigLevel(seed=42), ConfigLevel()]
+        min_length=10,
+        default_factory=lambda: (
+            [ConfigLevel(seed=42)] + [ConfigLevel() for _ in range(9)]
+        ),
     )
