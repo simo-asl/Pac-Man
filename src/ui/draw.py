@@ -214,36 +214,44 @@ class Draw:
             Cached transparent image containing the colored text mask.
         """
         cache_key = (text, size, color)
-        if cache_key not in self.text_image_cache:
-            text_image = self._compose_text(text, color)
-            text_width, text_height = self.measure_text(text, size)
-            if len(self.text_image_cache) >= TEXT_CACHE_LIMIT:
-                oldest_key = next(iter(self.text_image_cache))
-                self.text_image_cache.pop(oldest_key)
-            self.text_image_cache[cache_key] = self.scale_image(
-                text_image, (max(1, text_width), text_height),
-            )
-        return self.text_image_cache[cache_key]
+        if cache_key in self.text_image_cache:
+            return self.text_image_cache[cache_key]
+        text_image = self._compose_text(text, size, color)
+        if len(self.text_image_cache) >= TEXT_CACHE_LIMIT:
+            oldest_key = next(iter(self.text_image_cache))
+            self.text_image_cache.pop(oldest_key)
+        self.text_image_cache[cache_key] = text_image
+        return text_image
 
-    def _compose_text(self, text: str, color: Color) -> pygame.Surface:
-        """Copy the library-composed bitmap into a native-size text image.
+    def _compose_text(
+        self, text: str, size: int, color: Color
+    ) -> pygame.Surface:
+        """Scale bitmap pixels with integer coordinates and two loops.
 
         Args:
             text: Characters to arrange from left to right.
+            size: Requested text height in pixels.
             color: RGB color for the glyph's set pixels.
 
         Returns:
-            Transparent text image before resizing or placement.
+            Transparent text image at the requested size.
         """
         line_width = len(text) * FONT_GLYPH_WIDTH
         fallback = self.font.glyph('?')
         bitmap = self.font.draw(text, linelimit=line_width, missing=fallback)
         bitmap_rows: list[list[int]] = bitmap.todata(2)
-        bitmap_size = (bitmap.width(), bitmap.height())
-        text_image = pygame.Surface(bitmap_size, pygame.SRCALPHA)
-        for pixel_y, bitmap_row in enumerate(bitmap_rows):
-            for pixel_x, is_set in enumerate(bitmap_row):
-                if is_set:
+        text_width, text_height = self.measure_text(text, size)
+        text_image = pygame.Surface(
+            (text_width, text_height), pygame.SRCALPHA,
+        )
+        bitmap_width = bitmap.width()
+        bitmap_height = bitmap.height()
+        for pixel_y in range(text_height):
+            source_y = pixel_y * bitmap_height // text_height
+            bitmap_row = bitmap_rows[source_y]
+            for pixel_x in range(text_width):
+                source_x = pixel_x * bitmap_width // text_width
+                if bitmap_row[source_x]:
                     text_image.set_at((pixel_x, pixel_y), color)
         return text_image
 
@@ -256,7 +264,8 @@ class Draw:
         Returns:
             None.
         """
-        self.fill_rect(0, 0, *self.screen.get_size(), color)
+        width, height = self.screen.get_size()
+        self.fill_rect(0, 0, width, height, color)
 
     def draw_rect(
         self, x: int, y: int, width: int, height: int,

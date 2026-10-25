@@ -101,9 +101,8 @@ class Parser:
         if len(levels) < MIN_LEVELS:
             print(f'Config: at least {MIN_LEVELS} levels required; '
                   'adding defaults')
-            levels.extend(
-                ConfigLevel() for _ in range(MIN_LEVELS - len(levels))
-            )
+        while len(levels) < MIN_LEVELS:
+            levels.append(ConfigLevel())
         if len(raw_levels) > MAX_LEVELS:
             print(f'Config: limiting levels to {MAX_LEVELS}')
         return levels

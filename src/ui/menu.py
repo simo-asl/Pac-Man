@@ -60,13 +60,13 @@ class Menu:
         Returns:
             None.
         """
-        if key in (pygame.K_UP, pygame.K_DOWN):
-            selection_step = -1 if key == pygame.K_UP else 1
-            self.selected_index = (
-                self.selected_index + selection_step
-            ) % len(self.options)
+        if key == pygame.K_UP:
+            self.selected_index -= 1
+        elif key == pygame.K_DOWN:
+            self.selected_index += 1
         elif key == pygame.K_RETURN:
             self._activate_selection()
+        self.selected_index %= len(self.options)
 
     def _activate_selection(self) -> None:
         """Execute the selected action using the connected state machine.

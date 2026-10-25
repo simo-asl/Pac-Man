@@ -20,9 +20,10 @@ def create_default_levels() -> list[ConfigLevel]:
     Returns:
         A fixed-seed first level followed by randomly seeded levels.
     """
-    return [ConfigLevel(seed=42)] + [
-        ConfigLevel() for _ in range(MIN_LEVELS - 1)
-    ]
+    levels = [ConfigLevel(seed=42)]
+    while len(levels) < MIN_LEVELS:
+        levels.append(ConfigLevel())
+    return levels
 
 
 class GameConfig(BaseModel):

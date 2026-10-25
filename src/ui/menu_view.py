@@ -82,14 +82,15 @@ class MenuView:
             None.
         """
         self.drawer.draw_image(self.background_images[state], 0, 0)
+        panel_x = self.window_width // 5
+        panel_y = self.window_height // 10
+        panel_width = self.window_width * 3 // 5
+        panel_height = self.window_height * 4 // 5
         self.drawer.fill_rect(
-            self.window_width // 5, self.window_height // 10,
-            self.window_width * 3 // 5, self.window_height * 4 // 5,
-            PANEL_BACKGROUND,
+            panel_x, panel_y, panel_width, panel_height, PANEL_BACKGROUND,
         )
         self.drawer.draw_rect(
-            self.window_width // 5, self.window_height // 10,
-            self.window_width * 3 // 5, self.window_height * 4 // 5, GOLD, 2,
+            panel_x, panel_y, panel_width, panel_height, GOLD, 2,
         )
         self._draw_line(title, .15, GOLD, True)
         self._draw_line(hint, .83, MUTED)
@@ -111,11 +112,13 @@ class MenuView:
             GameState.MENU, 'PAC-MAN', 'UP / DOWN SELECT   ENTER CONFIRM'
         )
         for index, option in enumerate(options):
-            self._draw_line(
-                ('> ' if index == selected_index else '') + option,
-                .34 + index * .1,
-                GOLD if index == selected_index else TEXT,
-            )
+            label = option
+            color = TEXT
+            if index == selected_index:
+                label = '> ' + option
+                color = GOLD
+            row_position = .34 + index * .1
+            self._draw_line(label, row_position, color)
         if error_message:
             self._draw_line(error_message, .76, ERROR)
 
@@ -135,9 +138,12 @@ class MenuView:
             self._draw_line('No scores yet. Start your first game!', .46)
         for index, entry in enumerate(scores[:10]):
             score_row_y = int(self.window_height * (.28 + index * .048))
+            name_color = TEXT
+            if index == 0:
+                name_color = GOLD
             self.drawer.draw_text(
                 f'{index + 1:2}.  {entry.name}', self.window_width * 6 // 25,
-                score_row_y, self.font_size, GOLD if index == 0 else TEXT,
+                score_row_y, self.font_size, name_color,
                 max_width=self.window_width * 3 // 10,
             )
             self.drawer.draw_text(
@@ -192,5 +198,9 @@ class MenuView:
         self._draw_line(
             f'Letters, numbers and spaces: {len(player_name)}/10', .59, MUTED,
         )
-        self._draw_line(error_message or 'Backspace to edit.', .7,
-                        ERROR if error_message else MUTED)
+        feedback = 'Backspace to edit.'
+        feedback_color = MUTED
+        if error_message:
+            feedback = error_message
+            feedback_color = ERROR
+        self._draw_line(feedback, .7, feedback_color)
