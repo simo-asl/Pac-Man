@@ -1,3 +1,5 @@
+"""Export the public game package interface."""
+
 from .game import Game
 from .highscore import score
 from .player import Player

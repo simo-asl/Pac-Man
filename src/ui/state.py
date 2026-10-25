@@ -1,7 +1,11 @@
+"""Enumerate application screens."""
+
 from enum import Enum, auto
 
 
 class GameState(Enum):
+    """Enumerate the application screens."""
+
     MENU = auto()
     PLAYING = auto()
     PAUSED = auto()

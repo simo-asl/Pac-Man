@@ -1,10 +1,16 @@
+"""Adapt the assigned maze generator without modifying its package."""
+
+from collections import deque
+import random
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .ui.draw import Draw
+
 from mazegenerator import MazeGenerator
 
 from .parsing import GameConfig
-
-color38 = (255, 153, 204)
-color39 = (204, 153, 255)
-color40 = (255, 204, 153)
 
 DIRECTIONS = {
     1: (0, -1),  # north
@@ -15,80 +21,107 @@ DIRECTIONS = {
 
 
 class Maze:
+    """Adapt the assigned generator and place its grid inside the window."""
+
     def __init__(
         self,
         config: GameConfig,
-        draw,
+        draw: "Draw",
         level: int = 0,
         window: tuple[int, int] | None = None,
-    ):
-        """ ""
-        Maze: class for Creating the maze and drawing it
+    ) -> None:
+        """Generate the level and compute shared tile coordinates.
+
         Args:
-            config: Config class that carry the configs.
-            level: Level of the Game.
+            config: Validated gameplay configuration.
+            draw: Drawing helper for the target surface.
+            level: Zero-based index of the level to generate.
+            window: Window dimensions in pixels, or None to use the drawing
+                surface.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError: The assigned generator fails to create the maze.
         """
-        # TODO handle the caase iiiif there is less tehen 10 levels 
         self.columns = config.levels[level].width
         self.rows = config.levels[level].height
         if window is None:
             if hasattr(draw, "screen") and draw.screen is not None:
                 window = (draw.screen.get_width(), draw.screen.get_height())
             else:
-                window = (1800, 1200)
+                window = (2100, 1800)
 
-        self.CELL_SIZE = int(
-            min((window[0] // self.columns), (window[1] // self.rows)) * 0.80
+        margin = min(window) // 30
+        panel_x = margin
+        panel_y = window[1] // 6
+        panel_width = window[0] - 2 * margin
+        panel_height = window[1] - panel_y - 2 * margin
+        self.CELL_SIZE = max(
+            1, min(panel_width // self.columns, panel_height // self.rows)
         )
-
         self.WI = self.columns * self.CELL_SIZE
         self.HE = self.rows * self.CELL_SIZE
-        self.offset_x = (window[0] - self.WI) // 2
-        self.offset_y = (window[1] - self.HE) // 2
+        self.offset_x = panel_x + (panel_width - self.WI) // 2
+        self.offset_y = panel_y + (panel_height - self.HE) // 2
 
-        if level == 0:
-            self.maze_init = MazeGenerator((self.columns, self.rows), seed=42)
-        elif config.levels[level].seed is not None:
+        seed = config.levels[level].seed
+        if seed is None:
+            seed = 42 if level == 0 else random.randrange(1, 2**31)
+        try:
             self.maze_init = MazeGenerator(
-                (self.columns, self.rows), seed=config.levels[level].seed
+                (self.columns, self.rows), perfect=False, seed=seed
             )
-        else:
-            self.maze_init = MazeGenerator((self.columns, self.rows))
-
+        except Exception as error:
+            raise ValueError(f"Maze generator failed: {error}") from error
         self.level = level
         self.maze = self.maze_init.maze
 
         self.draw = draw
 
     def is_inside(self, x: int, y: int) -> bool:
-        """Func for Checking if the cordinate inside the
-            maze
+        """Return whether a cell lies inside the maze.
 
         Args:
-            x: the corddinate x.
-            y: the cordinate y.
+            x: Column of the maze cell.
+            y: Row of the maze cell.
 
         Returns:
-            return true if its inside the maze False if not.
+            bool: True when the cell lies inside the maze bounds.
         """
         return 0 <= x < self.columns and 0 <= y < self.rows
 
     def can_move(self, x: int, y: int, direction: int) -> bool:
-        """Check if its possible to Move into that Direction
+        """Check bounds and walls before entering an adjacent cell.
 
         Args:
-            x: corddinate of x.
-            y: corddinate of y.
-            direction: Direction.
+            x: Column of the maze cell.
+            y: Row of the maze cell.
+            direction: Direction wall bit: 1 up, 2 right, 4 down, or 8 left.
 
         Returns:
-            True if can move into that dir false if nah.
+            bool: True when the adjacent destination is inside and its wall is
+                open.
         """
         if not self.is_inside(x, y):
             return False
-        return not (self.maze[y][x] & direction)
+        dx, dy = DIRECTIONS[direction]
+        return self.is_inside(x + dx, y + dy) and not (
+            self.maze[y][x] & direction
+        )
 
     def get_available_moves(self, x: int, y: int) -> list[tuple[int, int]]:
+        """Perform the get available moves operation.
+
+        Args:
+            x: Column of the maze cell.
+            y: Row of the maze cell.
+
+        Returns:
+            list[tuple[int, int]]: Adjacent cells reachable through open
+                passages.
+        """
         paths = []
         for direction, (dx, dy) in DIRECTIONS.items():
             new_x = x + dx
@@ -99,18 +132,42 @@ class Maze:
         return paths
 
     def grid_to_pixel(self, x: int, y: int) -> tuple[int, int]:
+        """Convert a tile to its center in canvas coordinates.
+
+        Args:
+            x: Column of the maze cell.
+            y: Row of the maze cell.
+
+        Returns:
+            tuple[int, int]: Pixel coordinates of the specified tile center.
+        """
         return (
             self.offset_x + x * self.CELL_SIZE + self.CELL_SIZE // 2,
             self.offset_y + y * self.CELL_SIZE + self.CELL_SIZE // 2,
         )
 
     def pixel_to_grid(self, x: int, y: int) -> tuple[int, int]:
+        """Convert canvas coordinates to a maze tile.
+
+        Args:
+            x: Horizontal canvas coordinate in pixels.
+            y: Vertical canvas coordinate in pixels.
+
+        Returns:
+            tuple[int, int]: Maze column and row containing the pixel position.
+        """
         return (
             (x - self.offset_x) // self.CELL_SIZE,
             (y - self.offset_y) // self.CELL_SIZE,
         )
 
     def get_walkable_positions(self) -> list[tuple[int, int]]:
+        """Return centers of cells with at least one passage.
+
+        Returns:
+            list[tuple[int, int]]: Pixel centers of all cells with an open
+                passage.
+        """
         postions = []
         for row_idx, row in enumerate(self.maze):
             for col_idx, value in enumerate(row):
@@ -120,3 +177,31 @@ class Maze:
                 postions.append((center_x, center_y))
 
         return postions
+
+    def get_the_midlle_possitions(self) -> tuple[int, int]:
+        """Find a reachable spawn near the maze center.
+
+        Returns:
+            tuple[int, int]: A usable maze column and row near the center.
+
+        Raises:
+            ValueError: No usable spawn cell exists.
+        """
+        centre = (self.columns // 2, self.rows // 2)
+        visited = set()
+        visited.add(centre)
+        heap = deque([centre])
+        while heap:
+            x, y = heap.popleft()
+            if len(self.get_available_moves(x, y)) >= 1:
+                return x, y
+
+            for dx, dy in DIRECTIONS.values():
+                nx, ny = x + dx, y + dy
+                new = nx, ny
+                if new in visited or not self.is_inside(*new):
+                    continue
+                visited.add(new)
+                heap.append(new)
+
+        raise ValueError("No valid spawn position")
