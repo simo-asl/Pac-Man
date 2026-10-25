@@ -12,11 +12,11 @@ from ..resources import resource_path
 Color = tuple[int, int, int]
 FONT_GLYPH_WIDTH = 10
 FONT_GLYPH_HEIGHT = 20
-TEXT_CACHE_LIMIT = 128
+BITMAP_CACHE_LIMIT = 128
 
 
 class Draw:
-    """Draw images, text masks and pixel primitives on one target.
+    """Draw images, bitmap letters and pixel primitives on one target.
     """
     def __init__(self, screen: pygame.Surface) -> None:
         """Initialize this object and its runtime dependencies.
@@ -31,9 +31,7 @@ class Draw:
         self.wall_tile_cache: dict[int, dict[int, pygame.Surface]] = {}
         font_path = resource_path('assets/fonts/Tamzen10x20b.bdf')
         self.font = Font(str(font_path))
-        self.text_image_cache: dict[
-            tuple[str, int, Color], pygame.Surface
-        ] = {}
+        self.text_bitmaps: dict[str, list[list[int]]] = {}
 
     def draw_horizontal_line(
         self, start_x: int, y: int, end_x: int,
@@ -171,89 +169,56 @@ class Draw:
             )
 
     def draw_text(
-        self, text: str, x: int, y: int, size: int, color: Color,
+        self, text: str, x: int, y: int, scale: int, color: Color,
         centre: bool = False, max_width: int | None = None,
     ) -> None:
-        """Place pre-drawn bitmap glyphs, optionally centered and fitted.
+        """Draw each set bitmap pixel as a square at an integer scale.
 
         Args:
-            text: Text to measure or render.
-            x: Horizontal position in pixels.
-            y: Vertical position in pixels.
-            size: Requested font size in pixels.
-            color: RGB color for the pixels, outline or text.
-            centre: Whether x identifies the horizontal center instead of
-                left edge.
-            max_width: Maximum rendered text width; None disables fitting.
+            text: Characters to display from left to right.
+            x: Left edge, or horizontal center when centre is True.
+            y: Top edge in pixels.
+            scale: Pixel multiplier: 1, 2, 3, and so on.
+            color: RGB color for the set bitmap pixels.
+            centre: Whether to center the text horizontally at x.
+            max_width: Available width; long text is fitted or shortened.
 
         Returns:
             None.
         """
         if not text:
             return
+        scale = max(1, scale)
         if max_width is not None:
-            fitted_size = (
-                FONT_GLYPH_HEIGHT * max_width // (len(text) * FONT_GLYPH_WIDTH)
+            while (scale > 1
+                   and len(text) * FONT_GLYPH_WIDTH * scale > max_width):
+                scale -= 1
+            character_limit = max_width // (FONT_GLYPH_WIDTH * scale)
+            if len(text) > character_limit:
+                if character_limit > 3:
+                    text = text[:character_limit - 3] + '...'
+                else:
+                    text = text[:max(0, character_limit)]
+        if not text:
+            return
+        if text not in self.text_bitmaps:
+            if len(self.text_bitmaps) >= BITMAP_CACHE_LIMIT:
+                self.text_bitmaps.clear()
+            line_width = len(text) * FONT_GLYPH_WIDTH
+            fallback = self.font.glyph('?')
+            bitmap = self.font.draw(
+                text, linelimit=line_width, missing=fallback,
             )
-            size = min(size, max(1, fitted_size))
+            self.text_bitmaps[text] = bitmap.todata(2)
         if centre:
-            x -= self.measure_text(text, size)[0] // 2
-        self.draw_image(self._text_image(text, size, color), x, y)
-
-    def _text_image(
-        self, text: str, size: int, color: Color
-    ) -> pygame.Surface:
-        """Return a cached sized text image, preparing it when needed.
-
-        Args:
-            text: Text to measure or render.
-            size: Requested font size in pixels.
-            color: RGB color for the pixels, outline or text.
-
-        Returns:
-            Cached transparent image containing the colored text mask.
-        """
-        cache_key = (text, size, color)
-        if cache_key in self.text_image_cache:
-            return self.text_image_cache[cache_key]
-        text_image = self._compose_text(text, size, color)
-        if len(self.text_image_cache) >= TEXT_CACHE_LIMIT:
-            oldest_key = next(iter(self.text_image_cache))
-            self.text_image_cache.pop(oldest_key)
-        self.text_image_cache[cache_key] = text_image
-        return text_image
-
-    def _compose_text(
-        self, text: str, size: int, color: Color
-    ) -> pygame.Surface:
-        """Scale bitmap pixels with integer coordinates and two loops.
-
-        Args:
-            text: Characters to arrange from left to right.
-            size: Requested text height in pixels.
-            color: RGB color for the glyph's set pixels.
-
-        Returns:
-            Transparent text image at the requested size.
-        """
-        line_width = len(text) * FONT_GLYPH_WIDTH
-        fallback = self.font.glyph('?')
-        bitmap = self.font.draw(text, linelimit=line_width, missing=fallback)
-        bitmap_rows: list[list[int]] = bitmap.todata(2)
-        text_width, text_height = self.measure_text(text, size)
-        text_image = pygame.Surface(
-            (text_width, text_height), pygame.SRCALPHA,
-        )
-        bitmap_width = bitmap.width()
-        bitmap_height = bitmap.height()
-        for pixel_y in range(text_height):
-            source_y = pixel_y * bitmap_height // text_height
-            bitmap_row = bitmap_rows[source_y]
-            for pixel_x in range(text_width):
-                source_x = pixel_x * bitmap_width // text_width
-                if bitmap_row[source_x]:
-                    text_image.set_at((pixel_x, pixel_y), color)
-        return text_image
+            x -= len(text) * FONT_GLYPH_WIDTH * scale // 2
+        for row_index, row in enumerate(self.text_bitmaps[text]):
+            for column_index, bit in enumerate(row):
+                if bit:
+                    self.fill_rect(
+                        x + column_index * scale, y + row_index * scale,
+                        scale, scale, color,
+                    )
 
     def clear(self, color: Color = (0, 0, 0)) -> None:
         """Replace all pixels on the drawing target with one color.
@@ -288,21 +253,6 @@ class Draw:
         self.draw_horizontal_line(x, y, x + width, color, thickness)
         self.draw_horizontal_line(x, y + height, x + width, color, thickness)
         self.draw_vertical_line(x + width, y, y + height, color, thickness)
-
-    def measure_text(self, text: str, size: int) -> tuple[int, int]:
-        """Measure the fixed-width bitmap font without rasterizing glyphs.
-
-        Args:
-            text: Text to measure or render.
-            size: Requested font size in pixels.
-
-        Returns:
-            Width and height of the text in pixels.
-        """
-        glyph_width = max(1, size * FONT_GLYPH_WIDTH // FONT_GLYPH_HEIGHT)
-        text_width = len(text) * glyph_width
-        text_height = max(1, size)
-        return text_width, text_height
 
     def fill_rect(
         self, x: int, y: int, width: int, height: int, color: Color

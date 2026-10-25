@@ -30,8 +30,8 @@ model; this is not a claim of strict compatibility with Paris Linux MLX.
 ## Bitmap fonts
 
 `bdfparser` loads the bundled Tamzen Bold BDF font. Each glyph already contains
-its pixel bitmap in the file; no outline font rasterizer is used. `Draw` copies
-these bits into an RGBA image at the requested size with two pixel loops and
-integer coordinate equations, then places the image. This follows
+its pixel bitmap in the file; no outline font rasterizer is used. `Draw` uses
+two loops and fills one square for each set bit directly on the target.
+Integer scales of 1, 2, 3, and so on determine the square size. This follows
 Codam's bitmap-font approach (`mlx_get_font`, `mlx_get_texoffset`) using a custom
 bitmap asset. Neither Pillow nor the Pygame font subsystem is required.

@@ -46,11 +46,11 @@ class Parser:
             raise ValueError('Configuration must be a JSON object')
         return settings
 
-    def _validate_fields(
+    def _apply_defaults(
         self, model_type: type[BaseModel], settings: dict[str, Any],
         field_prefix: str = '',
-    ) -> dict[str, Any]:
-        """Validate known fields and replace unusable ones with defaults.
+    ) -> None:
+        """Replace missing or invalid settings with model defaults.
 
         Args:
             model_type: Pydantic model defining accepted fields and defaults.
@@ -58,14 +58,14 @@ class Parser:
             field_prefix: Location prefix used in validation messages.
 
         Returns:
-            Settings with invalid fields replaced by their model defaults.
+            None. The settings dictionary is updated in place.
         """
         defaults = model_type().model_dump()
-        repaired_settings = settings.copy()
         for field_name in defaults:
             if field_name not in settings:
                 print(f'Config: {field_prefix}{field_name} missing; '
                       'using default')
+                settings[field_name] = defaults[field_name]
         try:
             model_type.model_validate(settings)
         except ValidationError as error:
@@ -73,8 +73,7 @@ class Parser:
                 field_name = str(issue['loc'][0])
                 print(f'Config: invalid {field_prefix}{field_name}: '
                       f'{issue["msg"]}; using default')
-                repaired_settings[field_name] = defaults[field_name]
-        return repaired_settings
+                settings[field_name] = defaults[field_name]
 
     def _parse_levels(self, raw_levels: Any) -> list[ConfigLevel]:
         """Normalize level entries and enforce the supported level count.
@@ -93,10 +92,10 @@ class Parser:
             if not isinstance(level_settings, dict):
                 print(f'Config: invalid levels[{level_index}]; using defaults')
                 level_settings = {}
-            valid_fields = self._validate_fields(
+            self._apply_defaults(
                 ConfigLevel, level_settings, f'levels[{level_index}].',
             )
-            level = ConfigLevel.model_validate(valid_fields)
+            level = ConfigLevel.model_validate(level_settings)
             levels.append(level)
         if len(levels) < MIN_LEVELS:
             print(f'Config: at least {MIN_LEVELS} levels required; '
@@ -121,5 +120,5 @@ class Parser:
             return GameConfig()
         if 'levels' in settings:
             settings['levels'] = self._parse_levels(settings['levels'])
-        valid_fields = self._validate_fields(GameConfig, settings)
-        return GameConfig.model_validate(valid_fields)
+        self._apply_defaults(GameConfig, settings)
+        return GameConfig.model_validate(settings)

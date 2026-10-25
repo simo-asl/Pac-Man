@@ -28,7 +28,7 @@ minutes of earlier discussions.
 | Hjson and Pydantic | Delegate comment parsing and validation to libraries; small recovery functions preserve valid sibling values. Hjson accepts more syntax than strict JSON. |
 | Menu plus MenuView | Navigation and score submission stay separate from page drawing without introducing a UI framework. |
 | Pre-drawn Tamzen BDF font | Read existing bitmap glyphs through bdfparser; no TrueType rasterization is needed. The font license is bundled. |
-| Cached maze and text images | Prepare static images once rather than redrawing every wall or glyph each frame. |
+| Cached maze and bitmap rows | Load the maze image and decoded bitmap rows once; draw letters with plain pixel loops and integer scales. |
 | JSON top-ten highscores | Small, inspectable local storage without a database. File errors are handled, but writes are not transactional. |
 | Temporary test programs | Run focused checks outside the submitted source, consistent with the subject's testing guidance; keep repeatable procedures in the acceptance record. |
 

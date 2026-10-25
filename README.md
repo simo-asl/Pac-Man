@@ -177,12 +177,12 @@ Unexpected screen errors report their context and return to the menu; startup
 failures and Ctrl+C are handled without a traceback.
 
 The parser uses plain functions and library validation. Menu input and score
-submission are separate from page drawing. Static maze and text images are
-cached to avoid repeated work. The font library supplies the text bitmap.
-Two pixel loops scale it with
-`source = destination * bitmap_size // requested_size`. Tamzen Bold is a
-pre-drawn BDF font loaded by `bdfparser`; there is no TrueType or Pygame font
-rasterization.
+submission are separate from page drawing. The maze image and ready bitmap
+rows are cached. Text uses integer scales: 1×, 2×, 3×, and so on. Two loops
+draw each set bitmap pixel as a `scale × scale` square. Text that is too wide
+is reduced to a smaller integer scale, then shortened if necessary. Tamzen
+Bold is a pre-drawn BDF font loaded by `bdfparser`; there is no TrueType or
+Pygame font rasterization.
 
 ## General Software Architecture
 

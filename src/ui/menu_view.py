@@ -28,7 +28,7 @@ class MenuView:
         """
         self.drawer = drawer
         self.window_width, self.window_height = drawer.screen.get_size()
-        self.font_size = max(18, self.window_height // 32)
+        self.font_scale = max(1, self.window_height // 600)
         self.background_images: dict[GameState, pygame.Surface] = {}
         background_files = (
             (GameState.MENU, 'main_menu.png'),
@@ -61,12 +61,12 @@ class MenuView:
         """
         center_x = self.window_width // 2
         text_y = int(self.window_height * vertical_fraction)
-        font_size = self.font_size
+        font_scale = self.font_scale
         if is_heading:
-            font_size *= 2
+            font_scale *= 2
         maximum_width = self.window_width * 3 // 5
         self.drawer.draw_text(
-            text, center_x, text_y, font_size,
+            text, center_x, text_y, font_scale,
             color, True, max_width=maximum_width,
         )
 
@@ -143,12 +143,12 @@ class MenuView:
                 name_color = GOLD
             self.drawer.draw_text(
                 f'{index + 1:2}.  {entry.name}', self.window_width * 6 // 25,
-                score_row_y, self.font_size, name_color,
+                score_row_y, self.font_scale, name_color,
                 max_width=self.window_width * 3 // 10,
             )
             self.drawer.draw_text(
                 str(entry.score), self.window_width * 17 // 25, score_row_y,
-                self.font_size, TEXT, True, max_width=self.window_width // 7,
+                self.font_scale, TEXT, True, max_width=self.window_width // 7,
             )
 
     def draw_instructions(self) -> None:

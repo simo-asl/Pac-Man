@@ -4,7 +4,7 @@ import pygame
 
 from ..game import Game, Player
 from ..maze import Maze
-from .draw import Draw
+from .draw import FONT_GLYPH_HEIGHT, Draw
 from .theme import GOLD, PANEL_BACKGROUND, TEXT
 
 
@@ -31,7 +31,7 @@ class GameUi:
         self.game = game
         self.maze = maze
         self.window_width, self.window_height = drawer.screen.get_size()
-        self.font_size = max(18, self.window_height // 30)
+        self.font_scale = max(1, self.window_height // 600)
         self.maze_image = self._build_maze_image()
 
     def _build_maze_image(self) -> pygame.Surface:
@@ -76,12 +76,12 @@ class GameUi:
         for index, text in enumerate(hud_labels):
             self.drawer.draw_text(
                 text, self.window_width * (2 * index + 1) // 8,
-                self.window_height // 30, self.font_size, GOLD, True,
+                self.window_height // 30, self.font_scale, GOLD, True,
                 max_width=self.window_width // 5,
             )
         self.drawer.draw_text(
             'ARROW KEYS MOVE   P / ESC PAUSE', self.window_width // 2,
-            self.window_height * 24 // 25, self.font_size * 3 // 4, TEXT, True,
+            self.window_height * 24 // 25, 1, TEXT, True,
         )
 
     def draw_panel(self, title: str, lines: tuple[str, ...]) -> None:
@@ -106,13 +106,15 @@ class GameUi:
         )
         self.drawer.draw_text(
             title, self.window_width // 2, panel_y + panel_height // 8,
-            self.font_size * 2, GOLD, True, max_width=panel_width * 9 // 10,
+            self.font_scale * 2, GOLD, True, max_width=panel_width * 9 // 10,
         )
         row_height = panel_height * 3 // 5 // max(1, len(lines))
-        text_size = min(self.font_size, row_height * 4 // 5)
+        text_scale = self.font_scale
+        while text_scale > 1 and text_scale * FONT_GLYPH_HEIGHT > row_height:
+            text_scale -= 1
         for index, text in enumerate(lines):
             self.drawer.draw_text(
                 text, self.window_width // 2,
                 panel_y + panel_height // 3 + index * row_height,
-                text_size, TEXT, True, max_width=panel_width * 9 // 10,
+                text_scale, TEXT, True, max_width=panel_width * 9 // 10,
             )
