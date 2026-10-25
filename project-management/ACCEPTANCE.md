@@ -17,6 +17,7 @@ below record what they checked; they are not a claim of a manual playthrough.
 | Level skip | Pass | Press `S` through all ten levels; preserve score/lives; reach victory; handle a generation failure |
 | Ghost checks | Pass | Detour around walls, respawn while between cells, return edible when power remains |
 | Pause and loss screens | Pass | Instructions keep the game paused; Back returns to pause; resume; life-loss/game-over text |
+| Bitmap font simplification | Pass, 15 pixel comparisons | Same text output before/after across three sizes, all ASCII characters, spaces and long scores |
 | Runtime assets | Checked after organization | Every retained PNG is loaded through the game/menu paths; font and license are retained |
 | Gameplay timing | Pass | Ghost respawn, power and level time survive pause; movement matches at 20/30/60/144 render FPS |
 | Error handling | Pass | Failed gameplay screen returns to menu; main-menu/startup failures and Ctrl+C produce clear messages; missing-image errors identify the path |

@@ -2,7 +2,6 @@
 
 import sys
 from math import isqrt
-from typing import cast
 
 from bdfparser import Font
 
@@ -32,7 +31,6 @@ class Draw:
         self.wall_tile_cache: dict[int, dict[int, pygame.Surface]] = {}
         font_path = resource_path('assets/fonts/Tamzen10x20b.bdf')
         self.font = Font(str(font_path))
-        self.glyph_bitmap_cache: dict[str, list[list[int]]] = {}
         self.text_image_cache: dict[
             tuple[str, int, Color], pygame.Surface
         ] = {}
@@ -227,24 +225,8 @@ class Draw:
             )
         return self.text_image_cache[cache_key]
 
-    def _glyph_bitmap(self, character: str) -> list[list[int]]:
-        """Load and cache one pre-drawn glyph through bdfparser.
-
-        Args:
-            character: Character to load, with '?' used when unavailable.
-
-        Returns:
-            Rows of binary pixel values from the bundled bitmap font.
-        """
-        if character not in self.glyph_bitmap_cache:
-            glyph = self.font.glyph(character) or self.font.glyph('?')
-            self.glyph_bitmap_cache[character] = cast(
-                list[list[int]], glyph.draw().todata(2),
-            )
-        return self.glyph_bitmap_cache[character]
-
     def _compose_text(self, text: str, color: Color) -> pygame.Surface:
-        """Copy existing glyph pixels into a native-size text image.
+        """Copy the library-composed bitmap into a native-size text image.
 
         Args:
             text: Characters to arrange from left to right.
@@ -253,19 +235,16 @@ class Draw:
         Returns:
             Transparent text image before resizing or placement.
         """
-        text_image = pygame.Surface(
-            (max(1, len(text) * FONT_GLYPH_WIDTH), FONT_GLYPH_HEIGHT),
-            pygame.SRCALPHA,
-        )
-        for character_index, character in enumerate(text):
-            glyph_origin_x = character_index * FONT_GLYPH_WIDTH
-            glyph_rows = self._glyph_bitmap(character)
-            for pixel_y, bitmap_row in enumerate(glyph_rows):
-                for pixel_x, is_set in enumerate(bitmap_row):
-                    if is_set:
-                        text_image.set_at(
-                            (glyph_origin_x + pixel_x, pixel_y), color,
-                        )
+        line_width = len(text) * FONT_GLYPH_WIDTH
+        fallback = self.font.glyph('?')
+        bitmap = self.font.draw(text, linelimit=line_width, missing=fallback)
+        bitmap_rows: list[list[int]] = bitmap.todata(2)
+        bitmap_size = (bitmap.width(), bitmap.height())
+        text_image = pygame.Surface(bitmap_size, pygame.SRCALPHA)
+        for pixel_y, bitmap_row in enumerate(bitmap_rows):
+            for pixel_x, is_set in enumerate(bitmap_row):
+                if is_set:
+                    text_image.set_at((pixel_x, pixel_y), color)
         return text_image
 
     def clear(self, color: Color = (0, 0, 0)) -> None:
