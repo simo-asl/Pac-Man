@@ -10,6 +10,7 @@ from .state import GameState
 from .theme import ERROR, GOLD, MUTED, PANEL_BACKGROUND, TEXT
 
 if TYPE_CHECKING:
+    import pygame
     from ..game.highscore import score
 
 
@@ -28,19 +29,19 @@ class MenuView:
         self.drawer = drawer
         self.window_width, self.window_height = drawer.screen.get_size()
         self.font_size = max(18, self.window_height // 32)
-        self.background_images = {
-            state: drawer.load_image(
-                f'src/game/assets/better_backgrounds/{filename}',
-                (self.window_width, self.window_height),
-            )
-            for state, filename in (
-                (GameState.MENU, 'main_menu.png'),
-                (GameState.HIGHSCORES, 'highscores.png'),
-                (GameState.INSTRUCTIONS, 'instructions.png'),
-                (GameState.VICTORY, 'victory_image.png'),
-                (GameState.NAME_INPUT, 'name_input.png'),
-            )
-        }
+        self.background_images: dict[GameState, pygame.Surface] = {}
+        background_files = (
+            (GameState.MENU, 'main_menu.png'),
+            (GameState.HIGHSCORES, 'highscores.png'),
+            (GameState.INSTRUCTIONS, 'instructions.png'),
+            (GameState.VICTORY, 'victory_image.png'),
+            (GameState.NAME_INPUT, 'name_input.png'),
+        )
+        window_size = (self.window_width, self.window_height)
+        for state, filename in background_files:
+            image_path = f'assets/backgrounds/{filename}'
+            background = drawer.load_image(image_path, window_size)
+            self.background_images[state] = background
 
     def _draw_line(
         self, text: str, vertical_fraction: float, color: Color = TEXT,
@@ -58,12 +59,15 @@ class MenuView:
         Returns:
             None.
         """
+        center_x = self.window_width // 2
+        text_y = int(self.window_height * vertical_fraction)
+        font_size = self.font_size
+        if is_heading:
+            font_size *= 2
+        maximum_width = self.window_width * 3 // 5
         self.drawer.draw_text(
-            text, self.window_width // 2,
-            int(self.window_height * vertical_fraction),
-            self.font_size * 2 if is_heading else self.font_size,
-            color, True,
-            max_width=self.window_width * 3 // 5,
+            text, center_x, text_y, font_size,
+            color, True, max_width=maximum_width,
         )
 
     def _draw_page(self, state: GameState, title: str, hint: str) -> None:

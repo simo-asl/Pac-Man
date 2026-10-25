@@ -14,18 +14,12 @@ class Game:
     """
     def __init__(
         self,
-        screen: pygame.Surface,
-        s_width: int = 900,
-        s_height: int = 900,
         config: GameConfig | None = None,
     ) -> None:
 
         """Initialize this object and its runtime dependencies.
 
         Args:
-            screen: Surface used as the drawing target or game window.
-            s_width: Width of the playable area in pixels.
-            s_height: Height of the playable area in pixels.
             config: Validated game configuration; None uses default
                 settings.
 
@@ -36,10 +30,6 @@ class Game:
         self.level_start_time = pygame.time.get_ticks()
         self.total_pause_time = 0
         self.score: int = 0
-        self.s_height: int = s_height
-        self.s_width: int = s_width
-        self.level: int = 1
-        self.screen: pygame.Surface = screen
         self.death_time = 0
         self.paused = False
         self.manual_pause = False
@@ -84,7 +74,6 @@ class Game:
         Returns:
             None.
         """
-        self.level += 1
         self.level_start_time = pygame.time.get_ticks()
         self.total_pause_time = 0
         self.paused = False

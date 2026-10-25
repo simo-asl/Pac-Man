@@ -12,7 +12,5 @@ def resource_path(path: str) -> Path:
     Returns:
         Absolute resource path inside the installed application package.
     """
-    relative = Path(path)
-    if relative.parts and relative.parts[0] == 'src':
-        relative = Path(*relative.parts[1:])
-    return Path(__file__).resolve().parent / relative
+    package_directory = Path(__file__).resolve().parent
+    return package_directory / path

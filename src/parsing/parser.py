@@ -1,14 +1,12 @@
 """Load commented JSON, validate settings, and recover invalid fields."""
 
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import Any
 
 import hjson
 from pydantic import BaseModel, ValidationError
 
 from .models import MAX_LEVELS, MIN_LEVELS, ConfigLevel, GameConfig
-
-ConfigModel = TypeVar('ConfigModel', bound=BaseModel)
 
 
 class Parser:
@@ -47,9 +45,9 @@ class Parser:
         return settings
 
     def _validate_fields(
-        self, model_type: type[ConfigModel], settings: dict[str, Any],
+        self, model_type: type[BaseModel], settings: dict[str, Any],
         field_prefix: str = '',
-    ) -> ConfigModel:
+    ) -> dict[str, Any]:
         """Validate known fields and replace unusable ones with defaults.
 
         Args:
@@ -58,23 +56,23 @@ class Parser:
             field_prefix: Location prefix used in validation messages.
 
         Returns:
-            Validated model retaining every valid supplied field.
+            Settings with invalid fields replaced by their model defaults.
         """
-        defaults = model_type()
+        defaults = model_type().model_dump()
+        repaired_settings = settings.copy()
         for field_name in model_type.model_fields:
             if field_name not in settings:
                 print(f'Config: {field_prefix}{field_name} missing; '
                       'using default')
         try:
-            return model_type.model_validate(settings)
+            model_type.model_validate(settings)
         except ValidationError as error:
-            repaired_settings = settings.copy()
             for issue in error.errors():
                 field_name = str(issue['loc'][0])
                 print(f'Config: invalid {field_prefix}{field_name}: '
                       f'{issue["msg"]}; using default')
-                repaired_settings[field_name] = getattr(defaults, field_name)
-            return model_type.model_validate(repaired_settings)
+                repaired_settings[field_name] = defaults[field_name]
+        return repaired_settings
 
     def _parse_levels(self, raw_levels: Any) -> list[ConfigLevel]:
         """Normalize level entries and enforce the supported level count.
@@ -93,9 +91,11 @@ class Parser:
             if not isinstance(level_settings, dict):
                 print(f'Config: invalid levels[{level_index}]; using defaults')
                 level_settings = {}
-            levels.append(self._validate_fields(
+            valid_fields = self._validate_fields(
                 ConfigLevel, level_settings, f'levels[{level_index}].',
-            ))
+            )
+            level = ConfigLevel.model_validate(valid_fields)
+            levels.append(level)
         if len(levels) < MIN_LEVELS:
             print(f'Config: at least {MIN_LEVELS} levels required; '
                   'adding defaults')
@@ -120,4 +120,5 @@ class Parser:
             return GameConfig()
         if 'levels' in settings:
             settings['levels'] = self._parse_levels(settings['levels'])
-        return self._validate_fields(GameConfig, settings)
+        valid_fields = self._validate_fields(GameConfig, settings)
+        return GameConfig.model_validate(valid_fields)

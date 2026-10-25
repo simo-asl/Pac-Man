@@ -121,7 +121,7 @@ class High:
             return False
 
     def add_score(self, name: str, points: int) -> bool:
-        """Increase the current score by the supplied point amount.
+        """Validate, rank, and persist a completed-game score.
 
         Args:
             name: Player name limited to ten ASCII letters, digits or

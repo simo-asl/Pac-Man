@@ -104,9 +104,10 @@ class Menu:
             self._submit_score()
         else:
             typed_character = event.unicode
-            if (typed_character and typed_character.isascii()
-                    and (typed_character.isalnum() or typed_character == ' ')
-                    and len(self.player_name) < 10):
+            is_ascii = typed_character.isascii()
+            is_allowed = typed_character.isalnum() or typed_character == ' '
+            name_has_room = len(self.player_name) < 10
+            if typed_character and is_ascii and is_allowed and name_has_room:
                 self.player_name += typed_character
                 self.error_message = ''
 

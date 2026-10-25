@@ -10,10 +10,6 @@ if TYPE_CHECKING:
 
 from .parsing import GameConfig
 
-color38 = (255, 153, 204)
-color39 = (204, 153, 255)
-color40 = (255, 204, 153)
-
 DIRECTIONS = {
     1: (0, -1),  # north
     2: (1, 0),  # east
@@ -48,10 +44,7 @@ class Maze:
         self.columns = config.levels[level].width
         self.rows = config.levels[level].height
         if window is None:
-            if hasattr(draw, "screen") and draw.screen is not None:
-                window = (draw.screen.get_width(), draw.screen.get_height())
-            else:
-                window = (1800, 1200)
+            window = draw.screen.get_size()
 
         self.CELL_SIZE = max(1, int(
             min(window[0] // self.columns, window[1] // self.rows) * 0.80
@@ -71,8 +64,6 @@ class Maze:
 
         self.level = level
         self.maze = self.maze_init.maze
-
-        self.draw = draw
 
     def is_inside(self, x: int, y: int) -> bool:
         """Check whether grid coordinates lie within the maze.

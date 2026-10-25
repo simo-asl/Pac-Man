@@ -57,7 +57,7 @@ class Ghost:
         sprite_size = (self.radius * 2, self.radius * 2)
         self.images = {
             direction: self.draw.load_image(
-                f"src/game/assets/ghosts/{self.kind}_{name}.png",
+                f"assets/ghosts/{self.kind}_{name}.png",
                 sprite_size,
             )
             for direction, name in DIRECTION_NAMES.items()
@@ -67,11 +67,11 @@ class Ghost:
         self.target_x = self.pixel_x
         self.target_y = self.pixel_y
         self.frightened_image = self.draw.load_image(
-            "src/game/assets/ghosts/frightened_blue.png", sprite_size,
+            "assets/ghosts/frightened_blue.png", sprite_size,
         )
         self.eyes_images = {
             direction: self.draw.load_image(
-                f"src/game/assets/ghosts/eyes_{name}.png", sprite_size,
+                f"assets/ghosts/eyes_{name}.png", sprite_size,
             )
             for direction, name in DIRECTION_NAMES.items()
         }

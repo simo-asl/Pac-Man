@@ -30,7 +30,8 @@ class Draw:
         """
         self.screen: pygame.Surface = screen
         self.wall_tile_cache: dict[int, dict[int, pygame.Surface]] = {}
-        self.font = Font(str(resource_path('assets/fonts/Tamzen10x20b.bdf')))
+        font_path = resource_path('assets/fonts/Tamzen10x20b.bdf')
+        self.font = Font(str(font_path))
         self.glyph_bitmap_cache: dict[str, list[list[int]]] = {}
         self.text_image_cache: dict[
             tuple[str, int, Color], pygame.Surface
@@ -104,7 +105,7 @@ class Draw:
         walls = {}
         for wall_mask in range(16):
             walls[wall_mask] = self.load_image(
-                f"src/game/assets/maze/{wall_mask}.png",
+                f"assets/walls/{wall_mask}.png",
                 (cell_size, cell_size),
             )
 
@@ -213,7 +214,8 @@ class Draw:
             text_image = self._compose_text(text, color)
             text_width, text_height = self.measure_text(text, size)
             if len(self.text_image_cache) >= TEXT_CACHE_LIMIT:
-                self.text_image_cache.pop(next(iter(self.text_image_cache)))
+                oldest_key = next(iter(self.text_image_cache))
+                self.text_image_cache.pop(oldest_key)
             self.text_image_cache[cache_key] = self.scale_image(
                 text_image, (max(1, text_width), text_height),
             )
@@ -304,7 +306,9 @@ class Draw:
             Width and height of the text in pixels.
         """
         glyph_width = max(1, size * FONT_GLYPH_WIDTH // FONT_GLYPH_HEIGHT)
-        return len(text) * glyph_width, max(1, size)
+        text_width = len(text) * glyph_width
+        text_height = max(1, size)
+        return text_width, text_height
 
     def fill_rect(
         self, x: int, y: int, width: int, height: int, color: Color
@@ -326,15 +330,16 @@ class Draw:
         bottom = min(self.screen.get_height(), y + height)
         if right <= left or bottom <= top:
             return
-        pixel_bytes = self.screen.map_rgb(color).to_bytes(
-            self.screen.get_bytesize(), sys.byteorder,
-        )
+        bytes_per_pixel = self.screen.get_bytesize()
+        mapped_color = self.screen.map_rgb(color)
+        pixel_bytes = mapped_color.to_bytes(bytes_per_pixel, sys.byteorder)
         row_bytes = pixel_bytes * (right - left)
         pixel_buffer = self.screen.get_buffer()
         row_stride = self.screen.get_pitch()
-        offset_x = left * self.screen.get_bytesize()
+        offset_x = left * bytes_per_pixel
         for row_y in range(top, bottom):
-            pixel_buffer.write(row_bytes, row_y * row_stride + offset_x)
+            row_offset = row_y * row_stride + offset_x
+            pixel_buffer.write(row_bytes, row_offset)
 
     @staticmethod
     def scale_image(

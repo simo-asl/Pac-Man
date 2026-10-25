@@ -4,92 +4,229 @@
 
 ## Description
 
-A configurable Pac-Man game using Pygame, Tamzen bitmap lettering, Pydantic,
-Hjson and the assigned MazeGenerator package.
+A Python recreation of Pac-Man using the assigned MazeGenerator package.
+Collect pellets, avoid ghosts, use power pellets, and complete at least ten
+levels before the timer runs out. The game includes persistent top-ten
+highscores, pause instructions, and cheats for evaluation.
+
+The graphics backend is Pygame. Drawing stays in `Draw`, using images, bitmap
+letters and pixel operations. This project does not run MiniLibX itself; the
+comparison with Paris MiniLibX and Codam MLX42 is in [MLX.md](MLX.md).
 
 ## Instructions
 
-Install Python 3.12 or later and uv, then run:
+Requirements: Python 3.12 or later, [uv](https://docs.astral.sh/uv/), and a desktop
+session for the game window. Run these commands from the repository root:
 
 ```sh
 make install
 make run
-# Equivalent commands after activating .venv:
+```
+
+The subject's launch command works after activating the virtual environment:
+
+```sh
+source .venv/bin/activate
 python3 pac-man.py config.json
+```
+
+The installed entry point and module launch are also available:
+
+```sh
 pac-man config.json
 python3 -m src config.json
 ```
 
-The window is restored to 1800×1200. Actor sprites scale to the maze tiles.
-Losing a life displays a short LIFE LOST message; game over shows the cause
-and final score before name entry. Ghosts follow open paths around walls,
-flee while edible, and respawn after five seconds.
+The window is fixed at **1800×1200**. It can extend beyond a smaller desktop;
+this size was retained by request. Actor sprites scale to the maze cells.
 
-Use `make debug` for pdb, `make lint` for Flake8 and the subject's Mypy checks,
-and `make clean` to remove generated caches. Set `ARGS=other.json` to select
-another configuration. The console entry point is `src.__main__:main`.
+| Command | Purpose |
+| --- | --- |
+| `make install` | Install the game and development tools from the lockfile |
+| `make run ARGS=other.json` | Launch with a different configuration |
+| `make debug` | Run the root launcher under pdb |
+| `make lint` | Run Flake8 and the Mypy flags required by the subject |
+| `make clean` | Remove generated Python and tool caches |
 
-## Current game controls
+### Controls and game flow
 
-Run `.venv/bin/python -m src config.json` after installing dependencies.
-Use Up/Down and Enter in menus, arrow keys to move, and P or Escape to
-pause/resume. The pause menu offers Resume, Instructions and Main Menu. Instructions keep
-the game paused; Enter or Escape returns to the pause choices. Eat all pellets before
-the timer expires; completing all levels opens the victory screen. Both a win
-and a loss lead to name entry, score saving, then the main menu. Names accept
-1–10 ASCII letters, digits and spaces and must contain a non-space character.
-Save failures leave name entry open so you can fix the destination and retry.
-Cheats: I toggles invincibility, F freezes ghosts, L adds a life, S skips a level.
+| Input | Action |
+| --- | --- |
+| Arrow keys | Move; select menu choices with Up/Down |
+| Enter | Confirm a menu choice or submit a name |
+| P / Escape | Pause or resume gameplay |
+| Backspace | Edit the name field |
+| I | Toggle invincibility |
+| F | Toggle ghost freeze |
+| L | Add a life |
+| S | Skip to the next level; the last skip reaches victory |
 
-## Configuration and recovery
+Pause offers **Resume**, **Instructions**, and **Main Menu**. Instructions keep
+the game paused; Enter or Escape returns to the pause choices. Losing a life
+shows a short message before respawn. Game over and victory show the final
+score, then allow name entry. Saving returns to the main menu. A save failure
+keeps the form open so the player can correct the destination and retry.
 
-The configuration is a JSON object. Comments beginning with `#` or `//` and
-`/* ... */` blocks are supported outside quoted strings. Unknown keys are
-ignored. Missing or invalid fields produce a console message and use their
-own default, preserving other valid settings. Unreadable or malformed files
-use the complete default configuration.
+## Configuration
+
+The filename must end in `.json`. Hjson reads standard JSON plus `#`, `//` and
+`/* ... */` comments outside quoted strings. Pydantic validates the settings.
+Unknown keys are ignored. Missing or invalid fields produce a clear message
+and use their own default, retaining other valid values. An unreadable,
+malformed, or non-object file uses the full default configuration.
 
 | Key | Default | Accepted values |
 | --- | --- | --- |
-| `highscore_filename` | `highscores.json` | Nonempty file path |
+| `highscore_filename` | `highscores.json` | Nonblank path without null bytes |
 | `lives` | 3 | Integer ≥ 1 |
-| `pacgum` | 42 | Integer ≥ 0; at least 70% of corridors receive pellets |
+| `pacgum` | 42 | Integer ≥ 0; the game still fills at least roughly 70% of available corridors |
 | `points_per_pacgum` | 10 | Integer ≥ 0 |
 | `points_per_super_pacgum` | 50 | Integer ≥ 0 |
 | `points_per_ghost` | 200 | Integer ≥ 0 |
 | `level_max_time` | 90 | Integer seconds ≥ 1 |
-| `levels` | 10 levels | Array of level objects; short arrays are padded to 10 |
+| `levels` | Ten default levels | Nonempty array; padded to ten and limited to one hundred |
 | `levels[].width` | 39 | Integer 5–100 |
 | `levels[].height` | 29 | Integer 5–70 |
 | `levels[].seed` | `null` | Positive integer or `null` |
 
-The first level defaults to seed 42; subsequent levels use the generator's
-random seed unless configured. Explicit seeds are respected. At most 100 levels
-are loaded. Dimension limits keep tiles visible in the fixed game window.
-Highscores load when the menu starts and save to `highscore_filename` at game
-end; the top ten appear in the Highscores page. The assigned generator is used
-with `perfect=False`; generation failures return to the menu with feedback.
+The built-in first level uses seed 42. A first level explicitly configured with
+`seed: null` also uses 42; later null seeds become random positive integers.
+Explicit positive seeds are respected. Numeric settings reject booleans,
+fractional values and numeric strings.
 
-## Rendering libraries
+Example configuration:
 
-Pygame handles the window, events, images and pixel buffers. `Draw` owns
-rendering, including actor sprites and text. The `bdfparser` library reads the
-bundled Tamzen Bold 10×20 BDF font, whose glyphs are already drawn as bitmaps.
-The game copies those existing bits into cached images and resizes them;
-it never rasterizes a TrueType font. Pillow and Pygame's font API are unused.
-Hjson parses commented configuration and Pydantic validates its fields.
+```json
+{
+  "highscore_filename": "highscores.json",
+  "lives": 3,
+  "pacgum": 42,
+  "points_per_pacgum": 10,
+  "points_per_super_pacgum": 50,
+  "points_per_ghost": 200,
+  "level_max_time": 90,
+  "levels": [
+    {"width": 39, "height": 29, "seed": 42},
+    {"width": 39, "height": 29, "seed": null},
+    {"width": 39, "height": 29, "seed": null},
+    {"width": 39, "height": 29, "seed": null},
+    {"width": 39, "height": 29, "seed": null},
+    {"width": 39, "height": 29, "seed": null},
+    {"width": 39, "height": 29, "seed": null},
+    {"width": 39, "height": 29, "seed": null},
+    {"width": 39, "height": 29, "seed": null},
+    {"width": 39, "height": 29, "seed": null}
+  ]
+}
+```
 
-The graphics API comparison is documented in [MLX.md](MLX.md).
-The font and its license are bundled under `src/assets/fonts/`.
+The existing `config.json` contains only the legacy `level` key, which is
+ignored; the documented defaults therefore apply. Replace its contents with
+the example when configuring the game. Relative highscore paths are resolved
+from the working directory.
+
+## Highscore
+
+`High` stores a JSON object containing a `scores` array. Each entry has a `name`
+and a nonnegative integer `score`. Names accept one to ten ASCII letters,
+digits and spaces and must contain a non-space character.
+
+Scores load when the menu starts and refresh when Highscores is opened. At game
+end, a valid name and score are added, sorted descending, trimmed to ten, and
+written to `highscore_filename`. Missing, empty, unreadable or invalid files
+produce an empty leaderboard; file errors are reported without a traceback.
+
+JSON keeps this small local leaderboard easy to inspect and edit, without a
+database service. Writes are ordinary file writes, not transactional; possible
+interruption is recorded in the [risk register](project-management/RISKS.md).
+
+## Maze Generation
+
+The assigned `mazegenerator-2.1.0-py3-none-any.whl` remains at the repository
+root and is referenced by `pyproject.toml`. The package is used unchanged.
+`Maze` calls `MazeGenerator((width, height), perfect=False, seed=seed)` and
+adapts its grid for movement and rendering.
+
+Each cell uses wall bits: north 1, east 2, south 4, west 8. The adapter converts
+grid cells to window pixels and prevents movement outside the grid. The player
+spawns at the walkable cell closest to the middle, avoiding blocked cells in
+the generator's central motif. Ghosts and power pellets start in the corners.
+
+Later levels use explicit random integer seeds rather than passing `None` to
+the generator. A generation failure returns to the menu with an error message.
+The game's ghost pathfinding navigates the supplied maze; it does not generate
+or replace it.
+
+## Implementation
+
+The main loop collects events, dispatches the active screen, presents the frame,
+and caps rendering at 60 FPS. `GameController` creates each level and handles
+playing, pause, loss and progression. Score and remaining lives carry between
+levels. Timeout ends the game. Normal completion and `S` use the same progression
+path.
+
+`Game` handles score, pellet/ghost collisions, level timing and death pauses.
+`GhostsManager` chooses open routes, moves frightened ghosts away from the
+player, and checks eaten-ghost respawn. Remaining gameplay defects are recorded
+in [the bug list](project-management/BUGS.md), not hidden by the test results.
+
+The parser uses plain functions and library validation. Menu input and score
+submission are separate from page drawing. Static maze images, text images and
+bitmap glyphs are cached to avoid repeated work. Tamzen Bold is a pre-drawn BDF
+font loaded by `bdfparser`; there is no TrueType or Pygame font rasterization.
+
+## General Software Architecture
+
+| Module | Responsibility |
+| --- | --- |
+| `pac-man.py`, `src/__main__.py` | Launch, argument handling, window and event loop |
+| `src/parsing/parser.py` | Read comments, recover invalid fields, normalize levels |
+| `src/parsing/models.py` | Configuration constraints and defaults |
+| `src/ui/state_machine.py` | Route each frame to the active menu/game handler |
+| `src/ui/menu.py` | Menu selection, name editing and score submission |
+| `src/ui/menu_view.py` | Main menu, highscores, instructions, victory and name layouts |
+| `src/ui/game_ui.py` | Cached maze, HUD and pause/result panels |
+| `src/ui/draw.py` | Image loading/placement, bitmap text and pixel primitives |
+| `src/ui/content.py`, `src/ui/theme.py` | Shared instructions and colors |
+| `src/game_controller.py` | Connect gameplay objects and screen transitions |
+| `src/maze.py` | Adapt the assigned generator and movement coordinates |
+| `src/game/` | Player, ghosts, pellets, score, timing, cheats and persistence |
+| `src/resources.py`, `src/assets/` | Resolve and store the resources used at runtime |
+
+Dependencies flow from the launcher to configuration and the state machine.
+The state machine selects `Menu` or `GameController`; they ask their views and
+`Draw` to display content. Gameplay classes own their state, and `High` owns
+leaderboard persistence.
+
+Assets are organized once under `src/assets/`: backgrounds, ghosts, player,
+walls and fonts. The bitmap-font license is bundled. See the
+[cleanup inventory](project-management/CLEANUP.md) for the 48 retained files and
+removed duplicate resources.
+
+## Project Management
+
+The [project-management directory](project-management/README.md) contains the
+commit-based timeline, observed contributions, technical decisions, risks,
+acceptance procedures, open bugs and cleanup record. The timeline covers work
+visible from 4 to 25 October 2026. It is a retrospective record, not a claim
+that the team had an earlier formal schedule or meeting log.
+
+`make lint`, parser edge cases, menu/save flows, selected ghost behavior and
+all ten level skips have been checked. A complete manual playthrough, root
+packaging script/spec, standalone distribution test and free unlisted/private
+platform release remain pending. Detailed scope and results are in
+[ACCEPTANCE.md](project-management/ACCEPTANCE.md).
 
 ## Resources
 
+- [Project subject](en.subject.pdf)
+- [Pygame documentation](https://www.pygame.org/docs/)
+- [Pydantic documentation](https://docs.pydantic.dev/)
+- [Hjson syntax](https://hjson.github.io/syntax.html)
+- [bdfparser](https://github.com/tomchen/bdfparser)
+- [Tamzen bitmap font and license](https://github.com/sunaku/tamzen-font)
 - [42 Paris MiniLibX API](https://github.com/42Paris/minilibx-linux/blob/master/mlx.h)
 - [Codam MLX42 API](https://github.com/codam-coding-college/MLX42/blob/master/include/MLX42/MLX42.h)
-- [bdfparser](https://github.com/tomchen/bdfparser)
-- [Tamzen bitmap font](https://github.com/sunaku/tamzen-font)
-- [Hjson syntax](https://hjson.github.io/syntax.html)
-- [Pydantic](https://docs.pydantic.dev/)
 
-AI assisted with UI and parser fixes, API comparison, docstrings, installation
-configuration and regression checks. Team members must review these changes.
+AI was used for theory and explanations about game loops, state machines,
+configuration validation and bitmap graphics.

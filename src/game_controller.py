@@ -73,12 +73,7 @@ class GameController:
         self.level = 0
         self.started = True
 
-        self.game = Game(
-            self.screen,
-            self.screen.get_width(),
-            self.screen.get_height(),
-            config=self.config,
-        )
+        self.game = Game(config=self.config)
 
         self.remaining_lives = self.config.lives
 
@@ -116,14 +111,9 @@ class GameController:
             player_spawn[0],
             player_spawn[1],
             max(2, self.maze.CELL_SIZE * 2 // 5),
-            self.maze.WI,
-            self.maze.HE,
             lives=self.remaining_lives,
         )
         self.game_ui = GameUi(self.drawer, self.player, self.game, self.maze)
-
-        self.game.s_width = self.maze.WI
-        self.game.s_height = self.maze.HE
 
         ghost_corners = [
             (self.maze.columns - 1, 0),

@@ -17,8 +17,6 @@ class Player:
         x: int,
         y: int,
         radius: int,
-        s_width: int = 900,
-        s_height: int = 900,
         speed: int = 7,
         lives: int = 3,
     ) -> None:
@@ -29,8 +27,6 @@ class Player:
             x: Horizontal position in pixels.
             y: Vertical position in pixels.
             radius: Radius in pixels used for drawing or collision checks.
-            s_width: Width of the playable area in pixels.
-            s_height: Height of the playable area in pixels.
             speed: Distance moved in pixels on each gameplay update.
             lives: Initial positive number of player lives.
 
@@ -41,8 +37,6 @@ class Player:
         self.y: int = y
         self.lives: int = lives
         self.radius: int = radius
-        self.s_width: int = s_width
-        self.s_height: int = s_height
         self.speed: int = speed
         self.alive: bool = True
         self.powered_up: bool = False
@@ -163,7 +157,7 @@ class Player:
         if not self.images:
             self.images = {
                 direction: draw.load_image(
-                    f"src/game/assets/pacman/pacman_{name}_open.png",
+                    f"assets/player/pacman_{name}_open.png",
                     (self.radius * 2, self.radius * 2),
                 )
                 for direction, name in (
