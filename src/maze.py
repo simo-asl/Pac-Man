@@ -98,9 +98,9 @@ class Maze:
         Returns:
             True if the current cell has no wall in that direction.
         """
-        if not self.is_inside(x, y):
-            return False
-        return not (self.maze[y][x] & direction)
+        dx, dy = DIRECTIONS[direction]
+        return (self.is_inside(x, y) and self.is_inside(x + dx, y + dy)
+                and not (self.maze[y][x] & direction))
 
     def get_available_moves(self, x: int, y: int) -> list[tuple[int, int]]:
         """Find adjacent cells reachable through open walls.

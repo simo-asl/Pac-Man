@@ -11,7 +11,7 @@ from .ui import Draw, Menu
 from .ui.state_machine import StateMachine
 
 
-WINDOW_SIZE = (960, 640)
+WINDOW_SIZE = (1800, 1200)
 
 
 def main() -> int:

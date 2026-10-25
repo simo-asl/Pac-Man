@@ -83,9 +83,11 @@ class GameUi:
             title, self.width // 2, y + height // 8,
             self.size * 2, GOLD, True, max_width=width * 9 // 10,
         )
+        row_height = height * 3 // 5 // max(1, len(lines))
+        text_size = min(self.size, row_height * 4 // 5)
         for index, text in enumerate(lines):
             self.draw.draw_text(
                 text, self.width // 2,
-                y + height * (4 + index * 2) // 11,
-                self.size, TEXT, True, max_width=width * 9 // 10,
+                y + height // 3 + index * row_height,
+                text_size, TEXT, True, max_width=width * 9 // 10,
             )

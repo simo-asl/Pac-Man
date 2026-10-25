@@ -1,6 +1,6 @@
 """Coordinate ghost navigation and edible states."""
 
-import math
+from collections import deque
 import time
 
 from ..maze import DIRECTIONS, Maze
@@ -62,7 +62,7 @@ class GhostsManager:
         ghost: Ghost,
         target: tuple[int, int],
     ) -> tuple[int, int] | None:
-        """Choose a legal forward neighbor closest to the target.
+        """Follow an open route to the closest reachable target cell.
 
         Args:
             ghost: Ghost whose position, mode or destination is being
@@ -70,21 +70,35 @@ class GhostsManager:
             target: Grid coordinates toward which the ghost should move.
 
         Returns:
-            Next grid cell, or None if no legal neighbor exists.
+            Next route cell, or None if already at the closest reachable
+            cell.
         """
-        moves = self.maze.get_available_moves(ghost.x, ghost.y)
-        dx, dy = DIRECTIONS[ghost.direction]
-        reverse = (ghost.x - dx, ghost.y - dy)
-        forward_moves = [pos for pos in moves if pos != reverse]
-        if not forward_moves:
-            return reverse if reverse in moves else None
-        res = {}
-        for x, y in forward_moves:
-            edisition_formuala = math.sqrt(
-                (target[0] - x) ** 2 + (target[1] - y) ** 2)
-            res[(x, y)] = edisition_formuala
-        best_pos = min(res, key=lambda pos: res[pos])
-        return best_pos
+        start = (ghost.x, ghost.y)
+        queue = deque([start])
+        parents: dict[tuple[int, int], tuple[int, int] | None] = {start: None}
+        closest = start
+        best_distance = ((start[0] - target[0]) ** 2
+                         + (start[1] - target[1]) ** 2)
+        while queue:
+            current = queue.popleft()
+            distance = ((current[0] - target[0]) ** 2
+                        + (current[1] - target[1]) ** 2)
+            if distance < best_distance:
+                closest, best_distance = current, distance
+            if current == target:
+                closest = current
+                break
+            for neighbor in self.maze.get_available_moves(*current):
+                if neighbor not in parents:
+                    parents[neighbor] = current
+                    queue.append(neighbor)
+        if closest == start:
+            return None
+        while parents[closest] != start:
+            parent = parents[closest]
+            assert parent is not None
+            closest = parent
+        return closest
 
     def get_pinky_target(
         self, player_pos: tuple[int, int], player_direction: int
@@ -154,14 +168,11 @@ class GhostsManager:
             Next grid cell away from the player, or None if blocked.
         """
         moves = self.maze.get_available_moves(ghost.x, ghost.y)
-        dx, dy = DIRECTIONS[ghost.direction]
-        reverse = (ghost.x - dx, ghost.y - dy)
-        new_moves = [move for move in moves if move != reverse]
-        if not new_moves:
-            return reverse if reverse in moves else None
+        if not moves:
+            return None
         player_pos = self.maze.pixel_to_grid(self.player.x, self.player.y)
         return max(
-            new_moves,
+            moves,
             key=lambda pos: (
                 (pos[0] - player_pos[0]) ** 2 + (pos[1] - player_pos[1]) ** 2
             ),
@@ -196,11 +207,11 @@ class GhostsManager:
         Returns:
             None.
         """
+        best_pos = None
         if ghost.mode == "chase":
             player_pos = self.maze.pixel_to_grid(self.player.x, self.player.y)
-            if ghost.kind == "blinky":
-                target = player_pos
-            elif ghost.kind == "pinky":
+            target = player_pos
+            if ghost.kind == "pinky":
                 target = self.get_pinky_target(
                     player_pos, self.player.direction)
             elif ghost.kind == "inky":
@@ -223,9 +234,6 @@ class GhostsManager:
         elif ghost.mode == "frightened":
             best_pos = self.choose_frightened_tile(ghost)
         elif ghost.mode == "eaten":
-            if time.monotonic() - ghost.time_eaten >= 5:
-                ghost.respawn()
-                return
             best_pos = self.choose_next_tile(ghost, ghost.spawn)
         if best_pos is None:
             return
@@ -249,6 +257,12 @@ class GhostsManager:
         if self.frozen:
             return
         for ghost in self.ghosts:
+            if (ghost.mode == "eaten"
+                    and time.monotonic() - ghost.time_eaten >= 5):
+                ghost.respawn()
+                if self.player.powered_up:
+                    ghost.mode = "frightened"
+                continue
             if not ghost.is_at_target():
                 continue
             self.move_ghost(ghost)

@@ -20,8 +20,10 @@ pac-man config.json
 python3 -m src config.json
 ```
 
-The window is 960×640, sized for this PC’s 1024×768 desktop. Actor sprites
-scale to the maze tiles.
+The window is restored to 1800×1200. Actor sprites scale to the maze tiles.
+Losing a life displays a short LIFE LOST message; game over shows the cause
+and final score before name entry. Ghosts follow open paths around walls,
+flee while edible, and respawn after five seconds.
 
 Use `make debug` for pdb, `make lint` for Flake8 and the subject's Mypy checks,
 and `make clean` to remove generated caches. Set `ARGS=other.json` to select
@@ -31,7 +33,8 @@ another configuration. The console entry point is `src.__main__:main`.
 
 Run `.venv/bin/python -m src config.json` after installing dependencies.
 Use Up/Down and Enter in menus, arrow keys to move, and P or Escape to
-pause/resume. The pause menu also offers Main Menu. Eat all pellets before
+pause/resume. The pause menu offers Resume, Instructions and Main Menu. Instructions keep
+the game paused; Enter or Escape returns to the pause choices. Eat all pellets before
 the timer expires; completing all levels opens the victory screen. Both a win
 and a loss lead to name entry, score saving, then the main menu. Names accept
 1–10 ASCII letters, digits and spaces and must contain a non-space character.

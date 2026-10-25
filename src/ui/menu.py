@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 import pygame
 
 from ..game.highscore import High, score
+from .content import INSTRUCTIONS
 from .draw import Draw
 from .state import GameState
 
@@ -261,15 +262,7 @@ class Menu:
             self.draw_highscore(self.scores)
         elif state == GameState.INSTRUCTIONS:
             self.page(state, 'HOW TO PLAY', 'ENTER / ESC BACK')
-            for index, text in enumerate((
-                'ARROW KEYS: move through corridors',
-                'P / ESC: pause or resume',
-                'Eat every pellet to finish the level.',
-                'Power pellets let you eat blue ghosts.',
-                'Avoid ghosts; watch your lives and timer.',
-                'Clear every level to win.',
-                'CHEATS: I invincible / F freeze / L life / S skip',
-            )):
+            for index, text in enumerate(INSTRUCTIONS):
                 self.line(text, .29 + index * .066)
         elif self.machine is not None:
             points = self.machine.game.game.score

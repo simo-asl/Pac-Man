@@ -15,6 +15,7 @@ from src.game.pacgum import Pacgum, SuperPacgum
 from src.maze import Maze
 from src.parsing.parser import GameConfig
 from src.ui import Draw
+from src.ui.content import INSTRUCTIONS
 from src.ui.game_ui import GameUi
 from src.ui.state import GameState
 
@@ -50,6 +51,7 @@ class GameController:
         self.machine: StateMachine | None = None
         self.started = False
         self.pause_selected = 0
+        self.pause_instructions = False
 
     def set_machine(self, machine: "StateMachine") -> None:
         """Attach the state machine used for screen transitions.
@@ -245,21 +247,31 @@ class GameController:
                 if event.key in (pygame.K_p, pygame.K_ESCAPE):
                     if not self.game.paused:
                         self.pause_selected = 0
+                        self.pause_instructions = False
                         self.game.toggle_pause(self.player)
                         self.change_state(GameState.PAUSED)
                 elif self.cheats.handle_key(event.key):
                     self.next_level()
 
             case GameState.PAUSED:
+                if self.pause_instructions:
+                    if event.key in (pygame.K_RETURN, pygame.K_ESCAPE,
+                                     pygame.K_p):
+                        self.pause_instructions = False
+                    return
                 if event.key in (pygame.K_UP, pygame.K_DOWN):
-                    self.pause_selected = 1 - self.pause_selected
+                    step = -1 if event.key == pygame.K_UP else 1
+                    self.pause_selected = (self.pause_selected + step) % 3
                 elif event.key in (pygame.K_p, pygame.K_ESCAPE) or (
                     event.key == pygame.K_RETURN and self.pause_selected == 0
                 ):
                     self.game.toggle_pause(self.player)
                     self.change_state(GameState.PLAYING)
                 elif event.key == pygame.K_RETURN:
-                    self.change_state(GameState.MENU)
+                    if self.pause_selected == 1:
+                        self.pause_instructions = True
+                    else:
+                        self.change_state(GameState.MENU)
 
             case GameState.GAME_OVER:
                 if event.key == pygame.K_RETURN:
@@ -371,19 +383,32 @@ class GameController:
 
         self.player.draw(self.drawer)
         self.ghosts.draw_all()
+        if self.game.paused and self.player.alive:
+            self.game_ui.panel('LIFE LOST', (
+                f'LIVES LEFT: {self.player.lives}', 'GET READY TO CONTINUE',
+            ))
 
     def draw_paused(self) -> None:
-        """Offer resume and return-to-menu actions.
+        """Show pause choices or instructions without updating gameplay.
 
         Returns:
             None.
         """
         self.draw_playing()
-        self.game_ui.panel('PAUSED', (
-            ('> ' if self.pause_selected == 0 else '') + 'RESUME',
-            ('> ' if self.pause_selected == 1 else '') + 'MAIN MENU',
-            'UP / DOWN SELECT   ENTER CONFIRM',
-        ))
+        if self.pause_instructions:
+            self.game_ui.panel('HOW TO PLAY', (
+                *INSTRUCTIONS, 'ENTER / ESC BACK TO PAUSE',
+            ))
+        else:
+            choices = tuple(
+                ('> ' if index == self.pause_selected else '') + label
+                for index, label in enumerate(
+                    ('RESUME', 'INSTRUCTIONS', 'MAIN MENU')
+                )
+            )
+            self.game_ui.panel('PAUSED', (
+                *choices, 'UP / DOWN SELECT   ENTER CONFIRM',
+            ))
 
     def draw_game_over(self) -> None:
         """Show the final score and prompt for highscore entry.
@@ -392,8 +417,11 @@ class GameController:
             None.
         """
         self.draw_playing()
-        self.game_ui.panel('GAME OVER', (
-            f'FINAL SCORE: {self.game.score}', 'ENTER SAVE YOUR SCORE',
+        reason = ('TIME RAN OUT' if self.game.level_time_remaining() == 0
+                  else 'NO LIVES LEFT')
+        self.game_ui.panel('GAME OVER - YOU LOST', (
+            reason, f'FINAL SCORE: {self.game.score}',
+            'ENTER SAVE YOUR SCORE',
         ))
 
     def draw_level_complete(self) -> None:
