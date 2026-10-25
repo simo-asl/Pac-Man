@@ -86,11 +86,17 @@ class Draw:
             Decoded PNG surface ready for image placement.
 
         Raises:
-            OSError: The image file cannot be opened.
-            pygame.error: The image cannot be decoded.
+            RuntimeError: The image cannot be opened, decoded, or resized.
         """
-        image = pygame.image.load(str(resource_path(path)))
-        return self.scale_image(image, size) if size is not None else image
+        image_path = resource_path(path)
+        try:
+            image = pygame.image.load(str(image_path))
+            if size is not None:
+                image = self.scale_image(image, size)
+            return image
+        except (OSError, pygame.error, ValueError) as error:
+            message = f"Cannot load image '{path}': {error}"
+            raise RuntimeError(message) from None
 
     def load_walls(self, cell_size: int) -> dict[int, pygame.Surface]:
         """Prepare all wall-mask images at the requested cell size.

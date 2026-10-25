@@ -58,6 +58,9 @@ def main() -> int:
                 time.sleep(delay)
 
         return 0
+    except KeyboardInterrupt:
+        print('Pac-Man: Closed by keyboard interrupt.')
+        return 0
     except Exception as error:
         print(f"Pac-Man: {error}")
         return 1

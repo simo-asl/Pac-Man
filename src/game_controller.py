@@ -1,5 +1,6 @@
 """Coordinate gameplay, keyboard input and screen transitions."""
 
+import time
 from typing import TYPE_CHECKING
 
 import pygame
@@ -18,6 +19,9 @@ from src.ui import Draw
 from src.ui.content import INSTRUCTIONS
 from src.ui.game_ui import GameUi
 from src.ui.state import GameState
+
+
+UPDATE_INTERVAL = 1 / 60
 
 
 class GameController:
@@ -52,6 +56,8 @@ class GameController:
         self.started = False
         self.pause_selected = 0
         self.pause_instructions = False
+        self.last_update_time = time.monotonic()
+        self.update_accumulator = 0.0
 
     def set_machine(self, machine: "StateMachine") -> None:
         """Attach the state machine used for screen transitions.
@@ -214,6 +220,8 @@ class GameController:
                 "GameController needs set_machine(machine) first"
             )
         self.machine.change_state(new_state)
+        self.last_update_time = time.monotonic()
+        self.update_accumulator = 0.0
 
     def handle_keys(
         self,
@@ -238,7 +246,7 @@ class GameController:
                     if not self.game.paused:
                         self.pause_selected = 0
                         self.pause_instructions = False
-                        self.game.toggle_pause(self.player)
+                        self.game.toggle_pause(self.player, self.ghosts)
                         self.change_state(GameState.PAUSED)
                 elif self.cheats.handle_key(event.key):
                     self.next_level()
@@ -255,7 +263,7 @@ class GameController:
                 elif event.key in (pygame.K_p, pygame.K_ESCAPE) or (
                     event.key == pygame.K_RETURN and self.pause_selected == 0
                 ):
-                    self.game.toggle_pause(self.player)
+                    self.game.toggle_pause(self.player, self.ghosts)
                     self.change_state(GameState.PLAYING)
                 elif event.key == pygame.K_RETURN:
                     if self.pause_selected == 1:
@@ -276,7 +284,7 @@ class GameController:
         state: GameState,
         keys: pygame.event.Event | list[pygame.event.Event] | None = None,
     ) -> None:
-        """Process frame input and render the current screen.
+        """Handle input, run fixed gameplay updates, and draw one frame.
 
         Args:
             state: Screen state whose input or content is being processed.
@@ -297,12 +305,19 @@ class GameController:
                 if self.machine.state != state:
                     return
 
-        # A transition (e.g. pause) must not update gameplay again.
-        if state == GameState.PLAYING and self.machine.state == state:
-            self.update_playing()
+        current_time = time.monotonic()
+        elapsed_time = current_time - self.last_update_time
+        self.last_update_time = current_time
 
-        if self.machine.state != state:
-            return
+        if state == GameState.PLAYING:
+            self.update_accumulator += elapsed_time
+            while self.update_accumulator >= UPDATE_INTERVAL:
+                self.update_accumulator -= UPDATE_INTERVAL
+                self.update_playing()
+                if self.machine.state != state:
+                    return
+        else:
+            self.update_accumulator = 0.0
 
         match state:
             case GameState.PLAYING:

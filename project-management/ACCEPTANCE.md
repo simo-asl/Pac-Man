@@ -18,7 +18,9 @@ below record what they checked; they are not a claim of a manual playthrough.
 | Ghost checks | Pass | Detour around walls, respawn while between cells, return edible when power remains |
 | Pause and loss screens | Pass | Instructions keep the game paused; Back returns to pause; resume; life-loss/game-over text |
 | Runtime assets | Checked after organization | Every retained PNG is loaded through the game/menu paths; font and license are retained |
-| Open-bug reproductions | Three confirmed | See [BUGS.md](BUGS.md); these are not passing behavior checks |
+| Gameplay timing | Pass | Ghost respawn, power and level time survive pause; movement matches at 20/30/60/144 render FPS |
+| Error handling | Pass | Failed gameplay screen returns to menu; main-menu/startup failures and Ctrl+C produce clear messages; missing-image errors identify the path |
+| Open-bug reproduction | B01 confirmed | Same-frame power-pellet/ghost contact remains open; B02 and B03 are fixed |
 
 ## Manual procedures still required
 

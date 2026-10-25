@@ -222,11 +222,14 @@ class Game:
         self.paused = True
         self.death_time = pygame.time.get_ticks()
 
-    def toggle_pause(self, player: Player) -> None:
-        """Pause or resume while preserving the timer and player power.
+    def toggle_pause(
+        self, player: Player, ghosts: GhostsManager
+    ) -> None:
+        """Pause or resume while preserving gameplay timers.
 
         Args:
-            player: Player whose lives, position or power state is used.
+            player: Player whose power timer must stop during pause.
+            ghosts: Ghosts whose respawn timers must stop during pause.
 
         Returns:
             None.
@@ -237,12 +240,12 @@ class Game:
 
         if self.manual_pause:
             duration = now - self.manual_pause_start
-
             self.total_pause_time += duration
-
             if player.powered_up:
                 player.power_start_time += duration
-
+            for ghost in ghosts.ghosts:
+                if ghost.mode == "eaten":
+                    ghost.time_eaten += duration / 1000
             self.manual_pause = False
         else:
             self.manual_pause = True

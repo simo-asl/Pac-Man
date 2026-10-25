@@ -160,7 +160,9 @@ or replace it.
 ## Implementation
 
 The main loop collects events, dispatches the active screen, presents the frame,
-and caps rendering at 60 FPS. `GameController` creates each level and handles
+and caps rendering at 60 FPS. Gameplay uses sixty fixed updates per second,
+so movement stays consistent when rendering slows down. `GameController`
+creates each level and handles
 playing, pause, loss and progression. Score and remaining lives carry between
 levels. Timeout ends the game. Normal completion and `S` use the same progression
 path.
@@ -169,6 +171,10 @@ path.
 `GhostsManager` chooses open routes, moves frightened ghosts away from the
 player, and checks eaten-ghost respawn. Remaining gameplay defects are recorded
 in [the bug list](project-management/BUGS.md), not hidden by the test results.
+
+Pausing also stops eaten-ghost respawn, player power and the level timer.
+Unexpected screen errors report their context and return to the menu; startup
+failures and Ctrl+C are handled without a traceback.
 
 The parser uses plain functions and library validation. Menu input and score
 submission are separate from page drawing. Static maze images, text images and

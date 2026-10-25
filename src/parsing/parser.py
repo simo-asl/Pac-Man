@@ -6,7 +6,9 @@ from typing import Any
 import hjson
 from pydantic import BaseModel, ValidationError
 
-from .models import MAX_LEVELS, MIN_LEVELS, ConfigLevel, GameConfig
+from .models import (
+    MAX_LEVELS, MIN_LEVELS, ConfigLevel, GameConfig, create_default_levels,
+)
 
 
 class Parser:
@@ -60,7 +62,7 @@ class Parser:
         """
         defaults = model_type().model_dump()
         repaired_settings = settings.copy()
-        for field_name in model_type.model_fields:
+        for field_name in defaults:
             if field_name not in settings:
                 print(f'Config: {field_prefix}{field_name} missing; '
                       'using default')
@@ -85,7 +87,7 @@ class Parser:
         """
         if not isinstance(raw_levels, list) or not raw_levels:
             print('Config: invalid levels; using default levels')
-            return GameConfig().levels
+            return create_default_levels()
         levels = []
         for level_index, level_settings in enumerate(raw_levels[:MAX_LEVELS]):
             if not isinstance(level_settings, dict):

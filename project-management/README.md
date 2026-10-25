@@ -14,7 +14,7 @@ implementation: no original dated schedule or meeting notes were found.
 | [Team and decisions](TEAM_AND_DECISIONS.md) | Observed contributions and technical choices |
 | [Risks](RISKS.md) | Delivery risks and practical mitigations |
 | [Acceptance tests](ACCEPTANCE.md) | Checks run, results, and manual test procedures |
-| [Open bugs](BUGS.md) | Reproduced defects, listed without changing behavior |
+| [Bug tracker](BUGS.md) | Open defects and verified timing fixes |
 | [Cleanup](CLEANUP.md) | Asset inventory and dead-code removal |
 
 ## How progress is recorded
@@ -31,7 +31,8 @@ owners. Both contributors should review the release checklist before defense.
   behavior, scoring, persistent highscores, menus, pause, instructions and cheats.
 - Checked: lint, parser edge cases, menu flows, level skipping and selected ghost
   behavior. See the acceptance record for the scope of these checks.
-- Open: three reproduced gameplay bugs and the fixed-window display limitation.
+- Open: same-frame power-pellet/ghost collision and the fixed-window display
+  limitation. Ghost pause timing and frame-rate-dependent movement are fixed.
 - Pending: a full manual playthrough, a root packaging script/spec, a tested
   standalone distribution, and an unlisted/private platform release.
 

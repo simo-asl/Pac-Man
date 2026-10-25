@@ -16,7 +16,7 @@ class StateMachine:
     """Dispatch keyboard events and rendering to the active screen."""
 
     def __init__(self, menu: Menu, game: GameController) -> None:
-        """Register menu and gameplay handlers for every screen.
+        """Connect the menu and game handlers and select the main menu.
 
         Args:
             menu: Menu handler used for navigation and highscore entry.
@@ -28,17 +28,6 @@ class StateMachine:
         self.menu = menu
         self.game = game
         self.state = GameState.MENU
-        self.screen_handlers: dict[GameState, Menu | GameController] = {
-            GameState.HIGHSCORES: self.menu,
-            GameState.PLAYING: self.game,
-            GameState.PAUSED: self.game,
-            GameState.INSTRUCTIONS: self.menu,
-            GameState.GAME_OVER: self.game,
-            GameState.NAME_INPUT: self.menu,
-            GameState.LEVEL_COMPLETE: self.game,
-            GameState.VICTORY: self.menu,
-            GameState.MENU: self.menu,
-        }
         self.running = True
 
     def change_state(self, new_state: GameState) -> None:
@@ -59,7 +48,26 @@ class StateMachine:
             events: Input events collected for the current frame.
 
         Returns:
-            None.
+            None. A failed screen reports its error and returns to the menu.
+
+        Raises:
+            RuntimeError: The main menu itself cannot run or draw.
         """
-        screen_handler = self.screen_handlers[self.state]
-        screen_handler.run(self.state, events)
+        game_screens = (
+            GameState.PLAYING,
+            GameState.PAUSED,
+            GameState.GAME_OVER,
+            GameState.LEVEL_COMPLETE,
+        )
+        try:
+            if self.state in game_screens:
+                self.game.run(self.state, events)
+            else:
+                self.menu.run(self.state, events)
+        except Exception as error:
+            message = f'{self.state.name} screen failed: {error}'
+            if self.state == GameState.MENU:
+                raise RuntimeError(message) from None
+            print(f'Pac-Man: {message}')
+            self.menu.error_message = message
+            self.change_state(GameState.MENU)

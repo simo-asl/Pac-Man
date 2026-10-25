@@ -6,7 +6,7 @@ that the actions have already been completed.
 | Risk | Impact | Current mitigation | Remaining action |
 | --- | --- | --- | --- |
 | No standalone package or platform build | Required delivery cannot be demonstrated | Source launch and installed entry point are available | Add a root packaging script/spec; build, upload and test the distribution |
-| Gameplay defects | Incorrect life loss, pause timing or movement speed | Three issues have concrete reproductions in [BUGS.md](BUGS.md) | Team prioritizes and fixes them separately |
+| Gameplay defects | Incorrect life loss, pause timing or movement speed | The remaining same-frame collision bug and two timing fixes are recorded in [BUGS.md](BUGS.md) | Team prioritizes and fixes them separately |
 | Graphics-equivalence interpretation | Evaluators may question library calls | Bitmap font and pixel/image operations are documented in [MLX.md](../MLX.md) | Review the comparison with evaluators; do not claim Paris Linux PNG support |
 | Generator reinstallation or interface differences | Levels may fail to load during review | Use the supplied wheel unchanged and return to the menu on generation failure | Reinstall the assigned package on a clean setup and repeat generation checks |
 | Highscore destination unwritable | Player cannot persist a score | Error feedback leaves name entry open for retry | Test the packaged build's writable destination |
