@@ -1,102 +1,123 @@
-"""Read commented JSON and recover invalid settings independently."""
+"""Load commented JSON, validate settings, and recover invalid fields."""
 
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeVar
 
 import hjson
 from pydantic import BaseModel, ValidationError
 
-from .modele import ConfigLevel, GameConfig
+from .models import MAX_LEVELS, MIN_LEVELS, ConfigLevel, GameConfig
+
+ConfigModel = TypeVar('ConfigModel', bound=BaseModel)
 
 
 class Parser:
-    """Load configuration without discarding valid sibling fields."""
+    """Coordinate configuration loading without discarding valid fields."""
 
     def __init__(self, file_path: str) -> None:
-        """Initialize this object and its runtime dependencies.
+        """Store the configuration file location.
 
         Args:
-            file_path: User-supplied path to the JSON configuration file.
+            file_path: Path to the commented JSON configuration.
 
         Returns:
             None.
         """
         self.file_path = Path(file_path)
 
-    def _fields(
-        self, model: type[BaseModel], values: dict[str, Any], label: str
-    ) -> dict[str, Any]:
-        """Replace missing or invalid known fields with their defaults.
+    def _read_config(self) -> dict[str, Any]:
+        """Decode one configuration object using Hjson.
+
+        Returns:
+            Raw settings before validation or default recovery.
+
+        Raises:
+            OSError: The configuration file cannot be read.
+            UnicodeError: The file is not valid UTF-8.
+            ValueError: The extension, syntax, or root object is invalid.
+            IndexError: Hjson encounters an unterminated block comment.
+            RecursionError: The configuration is nested too deeply.
+        """
+        if self.file_path.suffix.lower() != '.json':
+            raise ValueError('Configuration filename must end in .json')
+        file_contents = self.file_path.read_text(encoding='utf-8')
+        settings = hjson.loads(file_contents)
+        if not isinstance(settings, dict):
+            raise ValueError('Configuration must be a JSON object')
+        return settings
+
+    def _validate_fields(
+        self, model_type: type[ConfigModel], settings: dict[str, Any],
+        field_prefix: str = '',
+    ) -> ConfigModel:
+        """Validate known fields and replace unusable ones with defaults.
 
         Args:
-            model: Pydantic model that defines valid fields and their
-                defaults.
-            values: Decoded configuration fields to validate independently.
-            label: Prefix identifying this object in configuration
-                warnings.
+            model_type: Pydantic model defining accepted fields and defaults.
+            settings: Raw values for this configuration object.
+            field_prefix: Location prefix used in validation messages.
 
         Returns:
-            Known fields with invalid or missing values replaced by
-            defaults.
+            Validated model retaining every valid supplied field.
         """
-        defaults = model().model_dump()
-        selected = {key: value for key, value in values.items()
-                    if key in model.model_fields}
-        for key, default in defaults.items():
-            if key not in selected:
-                print(f"Config: {label}{key} missing; using {default!r}")
-                selected[key] = default
+        defaults = model_type()
+        for field_name in model_type.model_fields:
+            if field_name not in settings:
+                print(f'Config: {field_prefix}{field_name} missing; '
+                      'using default')
         try:
-            model.model_validate(selected)
+            return model_type.model_validate(settings)
         except ValidationError as error:
-            for detail in error.errors():
-                key = str(detail['loc'][0])
-                print(f"Config: invalid {label}{key}; "
-                      f"using {defaults[key]!r}")
-                selected[key] = defaults[key]
-        return selected
+            repaired_settings = settings.copy()
+            for issue in error.errors():
+                field_name = str(issue['loc'][0])
+                print(f'Config: invalid {field_prefix}{field_name}: '
+                      f'{issue["msg"]}; using default')
+                repaired_settings[field_name] = getattr(defaults, field_name)
+            return model_type.model_validate(repaired_settings)
 
-    def parser(self) -> GameConfig:
-        """Return a usable config and report file or value errors clearly.
+    def _parse_levels(self, raw_levels: Any) -> list[ConfigLevel]:
+        """Normalize level entries and enforce the supported level count.
+
+        Args:
+            raw_levels: Decoded level value; invalid containers use defaults.
 
         Returns:
-            Validated configuration, with safe defaults for unusable
-            values.
+            Between ten and one hundred validated level configurations.
+        """
+        if not isinstance(raw_levels, list) or not raw_levels:
+            print('Config: invalid levels; using default levels')
+            return GameConfig().levels
+        levels = []
+        for level_index, level_settings in enumerate(raw_levels[:MAX_LEVELS]):
+            if not isinstance(level_settings, dict):
+                print(f'Config: invalid levels[{level_index}]; using defaults')
+                level_settings = {}
+            levels.append(self._validate_fields(
+                ConfigLevel, level_settings, f'levels[{level_index}].',
+            ))
+        if len(levels) < MIN_LEVELS:
+            print(f'Config: at least {MIN_LEVELS} levels required; '
+                  'adding defaults')
+            levels.extend(
+                ConfigLevel() for _ in range(MIN_LEVELS - len(levels))
+            )
+        if len(raw_levels) > MAX_LEVELS:
+            print(f'Config: limiting levels to {MAX_LEVELS}')
+        return levels
+
+    def parse(self) -> GameConfig:
+        """Load, normalize, and validate the complete configuration.
+
+        Returns:
+            Usable settings, or full defaults when the file cannot be read.
         """
         try:
-            if self.file_path.suffix.lower() != '.json':
-                raise ValueError("Configuration filename must end in .json")
-            text = self.file_path.read_text(encoding='utf-8')
-            values = hjson.loads(text)
-            if not isinstance(values, dict):
-                raise ValueError("Configuration must be a JSON object")
+            settings = self._read_config()
         except (OSError, UnicodeError, ValueError, RecursionError,
                 IndexError) as error:
-            print(f"Config: {self.file_path}: {error}; using defaults")
+            print(f'Config: {self.file_path}: {error}; using defaults')
             return GameConfig()
-
-        raw_levels = values.get('levels')
-        if isinstance(raw_levels, list) and raw_levels:
-            levels = []
-            for index, level in enumerate(raw_levels[:100]):
-                if not isinstance(level, dict):
-                    print(f"Config: invalid levels[{index}]; using defaults")
-                    level = {}
-                fields = self._fields(ConfigLevel, level, f'levels[{index}].')
-                levels.append(ConfigLevel.model_validate(fields))
-            if len(levels) < 10:
-                print("Config: at least 10 levels required; adding defaults")
-                levels.extend(ConfigLevel() for _ in range(10 - len(levels)))
-            if len(raw_levels) > 100:
-                print("Config: limiting levels to 100")
-            values['levels'] = levels
-        elif 'levels' in values:
-            print("Config: invalid levels; using 10 default levels")
-            values['levels'] = GameConfig().levels
-        filename = values.get('highscore_filename')
-        if isinstance(filename, str) and (
-            not filename.strip() or '\x00' in filename
-        ):
-            print("Config: invalid highscore_filename; using highscores.json")
-            values['highscore_filename'] = 'highscores.json'
-        return GameConfig.model_validate(self._fields(GameConfig, values, ''))
+        if 'levels' in settings:
+            settings['levels'] = self._parse_levels(settings['levels'])
+        return self._validate_fields(GameConfig, settings)

@@ -26,7 +26,7 @@ def main() -> int:
 
     try:
         pygame.init()
-        config = Parser(sys.argv[1]).parser()
+        config = Parser(sys.argv[1]).parse()
 
         screen = pygame.display.set_mode(WINDOW_SIZE)
         pygame.display.set_caption("Pac-Man")

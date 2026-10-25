@@ -61,7 +61,7 @@ use the complete default configuration.
 | `levels` | 10 levels | Array of level objects; short arrays are padded to 10 |
 | `levels[].width` | 39 | Integer 5–100 |
 | `levels[].height` | 29 | Integer 5–70 |
-| `levels[].seed` | `null` | Integer or `null` |
+| `levels[].seed` | `null` | Positive integer or `null` |
 
 The first level defaults to seed 42; subsequent levels use the generator's
 random seed unless configured. Explicit seeds are respected. At most 100 levels

@@ -5,21 +5,19 @@ import pygame
 from ..game import Game, Player
 from ..maze import Maze
 from .draw import Draw
-
-GOLD = (255, 220, 50)
-TEXT = (240, 240, 240)
+from .theme import GOLD, PANEL_BACKGROUND, TEXT
 
 
 class GameUi:
     """Keep gameplay values visible around the playable grid."""
 
     def __init__(
-        self, draw: Draw, player: Player, game: Game, maze: Maze
+        self, drawer: Draw, player: Player, game: Game, maze: Maze
     ) -> None:
-        """Initialize this object and its runtime dependencies.
+        """Bind gameplay values and cache the static maze background.
 
         Args:
-            draw: Drawing helper used to prepare or display game images.
+            drawer: Drawing helper used to prepare or display game images.
             player: Player whose lives, position or power state is used.
             game: Current game controller or gameplay state.
             maze: Current maze with walls and grid-to-pixel conversion
@@ -28,44 +26,65 @@ class GameUi:
         Returns:
             None.
         """
-        self.draw, self.player, self.game, self.maze = draw, player, game, maze
-        self.width, self.height = draw.screen.get_size()
-        self.size = max(18, self.height // 30)
-        self.image = pygame.Surface((self.width, self.height))
-        painter = Draw(self.image)
-        painter.clear((5, 9, 18))
-        for y, row in enumerate(maze.maze):
-            for x, cell in enumerate(row):
-                painter.draw_maze(
-                    x, y, cell, maze.CELL_SIZE, maze.offset_x, maze.offset_y,
-                )
+        self.drawer = drawer
+        self.player = player
+        self.game = game
+        self.maze = maze
+        self.window_width, self.window_height = drawer.screen.get_size()
+        self.font_size = max(18, self.window_height // 30)
+        self.maze_image = self._build_maze_image()
 
-    def menu_game(self) -> None:
+    def _build_maze_image(self) -> pygame.Surface:
+        """Prepare a static wall image for the current level.
+
+        Returns:
+            Cached background and maze walls at the window resolution.
+        """
+        maze_image = pygame.Surface((self.window_width, self.window_height))
+        maze_drawer = Draw(maze_image)
+        maze_drawer.clear((5, 9, 18))
+        for row_index, maze_row in enumerate(self.maze.maze):
+            for column_index, wall_mask in enumerate(maze_row):
+                maze_drawer.draw_maze(
+                    column_index, row_index, wall_mask, self.maze.CELL_SIZE,
+                    self.maze.offset_x, self.maze.offset_y,
+                )
+        return maze_image
+
+    def draw_game(self) -> None:
         """Draw the cached maze, score, lives, level and remaining time.
 
         Returns:
             None.
         """
-        self.draw.draw_image(self.image, 0, 0)
-        remaining = max(0, int(self.game.level_time_remaining()))
-        values = (
+        self.drawer.draw_image(self.maze_image, 0, 0)
+        self._draw_hud()
+
+    def _draw_hud(self) -> None:
+        """Display live game values and the gameplay control hint.
+
+        Returns:
+            None.
+        """
+        remaining_seconds = max(0, int(self.game.level_time_remaining()))
+        hud_labels = (
             f'LIVES: {self.player.lives}',
             f'LEVEL: {self.maze.level + 1}/{len(self.game.config.levels)}',
             f'SCORE: {self.game.score}',
-            f'TIME: {remaining // 60}:{remaining % 60:02}',
+            f'TIME: {remaining_seconds // 60}:{remaining_seconds % 60:02}',
         )
-        for index, text in enumerate(values):
-            self.draw.draw_text(
-                text, self.width * (2 * index + 1) // 8,
-                self.height // 30, self.size, GOLD, True,
-                max_width=self.width // 5,
+        for index, text in enumerate(hud_labels):
+            self.drawer.draw_text(
+                text, self.window_width * (2 * index + 1) // 8,
+                self.window_height // 30, self.font_size, GOLD, True,
+                max_width=self.window_width // 5,
             )
-        self.draw.draw_text(
-            'ARROW KEYS MOVE   P / ESC PAUSE', self.width // 2,
-            self.height * 24 // 25, self.size * 3 // 4, TEXT, True,
+        self.drawer.draw_text(
+            'ARROW KEYS MOVE   P / ESC PAUSE', self.window_width // 2,
+            self.window_height * 24 // 25, self.font_size * 3 // 4, TEXT, True,
         )
 
-    def panel(self, title: str, lines: tuple[str, ...]) -> None:
+    def draw_panel(self, title: str, lines: tuple[str, ...]) -> None:
         """Show readable result or pause actions above the frozen maze.
 
         Args:
@@ -75,19 +94,25 @@ class GameUi:
         Returns:
             None.
         """
-        x, y = self.width // 5, self.height // 4
-        width, height = self.width * 3 // 5, self.height // 2
-        self.draw.fill_rect(x, y, width, height, (8, 12, 22))
-        self.draw.draw_rect(x, y, width, height, GOLD, 2)
-        self.draw.draw_text(
-            title, self.width // 2, y + height // 8,
-            self.size * 2, GOLD, True, max_width=width * 9 // 10,
+        panel_x = self.window_width // 5
+        panel_y = self.window_height // 4
+        panel_width = self.window_width * 3 // 5
+        panel_height = self.window_height // 2
+        self.drawer.fill_rect(
+            panel_x, panel_y, panel_width, panel_height, PANEL_BACKGROUND,
         )
-        row_height = height * 3 // 5 // max(1, len(lines))
-        text_size = min(self.size, row_height * 4 // 5)
+        self.drawer.draw_rect(
+            panel_x, panel_y, panel_width, panel_height, GOLD, 2,
+        )
+        self.drawer.draw_text(
+            title, self.window_width // 2, panel_y + panel_height // 8,
+            self.font_size * 2, GOLD, True, max_width=panel_width * 9 // 10,
+        )
+        row_height = panel_height * 3 // 5 // max(1, len(lines))
+        text_size = min(self.font_size, row_height * 4 // 5)
         for index, text in enumerate(lines):
-            self.draw.draw_text(
-                text, self.width // 2,
-                y + height // 3 + index * row_height,
-                text_size, TEXT, True, max_width=width * 9 // 10,
+            self.drawer.draw_text(
+                text, self.window_width // 2,
+                panel_y + panel_height // 3 + index * row_height,
+                text_size, TEXT, True, max_width=panel_width * 9 // 10,
             )

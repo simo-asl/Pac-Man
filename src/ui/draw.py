@@ -11,6 +11,9 @@ import pygame
 from ..resources import resource_path
 
 Color = tuple[int, int, int]
+FONT_GLYPH_WIDTH = 10
+FONT_GLYPH_HEIGHT = 20
+TEXT_CACHE_LIMIT = 128
 
 
 class Draw:
@@ -26,10 +29,10 @@ class Draw:
             None.
         """
         self.screen: pygame.Surface = screen
-        self.walls: dict[int, dict[int, pygame.Surface]] = {}
+        self.wall_tile_cache: dict[int, dict[int, pygame.Surface]] = {}
         self.font = Font(str(resource_path('assets/fonts/Tamzen10x20b.bdf')))
-        self.glyph_pixels: dict[str, list[list[int]]] = {}
-        self.text_images: dict[
+        self.glyph_bitmap_cache: dict[str, list[list[int]]] = {}
+        self.text_image_cache: dict[
             tuple[str, int, Color], pygame.Surface
         ] = {}
 
@@ -99,9 +102,10 @@ class Draw:
             images.
         """
         walls = {}
-        for i in range(16):
-            walls[i] = self.load_image(
-                f"src/game/assets/maze/{i}.png", (cell_size, cell_size),
+        for wall_mask in range(16):
+            walls[wall_mask] = self.load_image(
+                f"src/game/assets/maze/{wall_mask}.png",
+                (cell_size, cell_size),
             )
 
         return walls
@@ -129,12 +133,12 @@ class Draw:
         Returns:
             None.
         """
-        if cell_size not in self.walls:
-            self.walls[cell_size] = self.load_walls(cell_size)
+        if cell_size not in self.wall_tile_cache:
+            self.wall_tile_cache[cell_size] = self.load_walls(cell_size)
         x = cell_x * cell_size + offset_x
         y = cell_y * cell_size + offset_y
 
-        self.draw_image(self.walls[cell_size][cell], x, y)
+        self.draw_image(self.wall_tile_cache[cell_size][cell], x, y)
 
     def draw_circle(
         self,
@@ -154,10 +158,10 @@ class Draw:
         Returns:
             None.
         """
-        for dy in range(-radius, radius + 1):
-            half_width = isqrt(radius * radius - dy * dy)
+        for row_offset in range(-radius, radius + 1):
+            half_width = isqrt(radius * radius - row_offset * row_offset)
             self.draw_horizontal_line(
-                center_x - half_width, center_y + dy,
+                center_x - half_width, center_y + row_offset,
                 center_x + half_width + 1, color,
             )
 
@@ -183,7 +187,10 @@ class Draw:
         if not text:
             return
         if max_width is not None:
-            size = min(size, max(1, 2 * max_width // len(text)))
+            fitted_size = (
+                FONT_GLYPH_HEIGHT * max_width // (len(text) * FONT_GLYPH_WIDTH)
+            )
+            size = min(size, max(1, fitted_size))
         if centre:
             x -= self.measure_text(text, size)[0] // 2
         self.draw_image(self._text_image(text, size, color), x, y)
@@ -191,7 +198,7 @@ class Draw:
     def _text_image(
         self, text: str, size: int, color: Color
     ) -> pygame.Surface:
-        """Copy existing BDF glyph bits into a cached text image.
+        """Return a cached sized text image, preparing it when needed.
 
         Args:
             text: Text to measure or render.
@@ -201,30 +208,57 @@ class Draw:
         Returns:
             Cached transparent image containing the colored text mask.
         """
-        key = (text, size, color)
-        if key not in self.text_images:
-            image = pygame.Surface(
-                (max(1, len(text) * 10), 20), pygame.SRCALPHA,
+        cache_key = (text, size, color)
+        if cache_key not in self.text_image_cache:
+            text_image = self._compose_text(text, color)
+            text_width, text_height = self.measure_text(text, size)
+            if len(self.text_image_cache) >= TEXT_CACHE_LIMIT:
+                self.text_image_cache.pop(next(iter(self.text_image_cache)))
+            self.text_image_cache[cache_key] = self.scale_image(
+                text_image, (max(1, text_width), text_height),
             )
-            for index, char in enumerate(text):
-                if char not in self.glyph_pixels:
-                    glyph = self.font.glyph(char) or self.font.glyph('?')
-                    self.glyph_pixels[char] = cast(
-                        list[list[int]], glyph.draw().todata(2),
-                    )
-                for y, row in enumerate(self.glyph_pixels[char]):
-                    for x, bit in enumerate(row):
-                        if bit:
-                            image.set_at((index * 10 + x, y), color)
-            image = self.scale_image(
-                image, (
-                    max(1, self.measure_text(text, size)[0]), max(1, size),
-                ),
+        return self.text_image_cache[cache_key]
+
+    def _glyph_bitmap(self, character: str) -> list[list[int]]:
+        """Load and cache one pre-drawn glyph through bdfparser.
+
+        Args:
+            character: Character to load, with '?' used when unavailable.
+
+        Returns:
+            Rows of binary pixel values from the bundled bitmap font.
+        """
+        if character not in self.glyph_bitmap_cache:
+            glyph = self.font.glyph(character) or self.font.glyph('?')
+            self.glyph_bitmap_cache[character] = cast(
+                list[list[int]], glyph.draw().todata(2),
             )
-            if len(self.text_images) >= 128:
-                self.text_images.pop(next(iter(self.text_images)))
-            self.text_images[key] = image
-        return self.text_images[key]
+        return self.glyph_bitmap_cache[character]
+
+    def _compose_text(self, text: str, color: Color) -> pygame.Surface:
+        """Copy existing glyph pixels into a native-size text image.
+
+        Args:
+            text: Characters to arrange from left to right.
+            color: RGB color for the glyph's set pixels.
+
+        Returns:
+            Transparent text image before resizing or placement.
+        """
+        text_image = pygame.Surface(
+            (max(1, len(text) * FONT_GLYPH_WIDTH), FONT_GLYPH_HEIGHT),
+            pygame.SRCALPHA,
+        )
+        for character_index, character in enumerate(text):
+            glyph_origin_x = character_index * FONT_GLYPH_WIDTH
+            glyph_rows = self._glyph_bitmap(character)
+            for pixel_y, bitmap_row in enumerate(glyph_rows):
+                for pixel_x, is_set in enumerate(bitmap_row):
+                    if is_set:
+                        text_image.set_at(
+                            (glyph_origin_x + pixel_x, pixel_y), color,
+                        )
+        return text_image
 
     def clear(self, color: Color = (0, 0, 0)) -> None:
         """Replace all pixels on the drawing target with one color.
@@ -269,7 +303,8 @@ class Draw:
         Returns:
             Width and height of the text in pixels.
         """
-        return len(text) * max(1, size // 2), max(1, size)
+        glyph_width = max(1, size * FONT_GLYPH_WIDTH // FONT_GLYPH_HEIGHT)
+        return len(text) * glyph_width, max(1, size)
 
     def fill_rect(
         self, x: int, y: int, width: int, height: int, color: Color
@@ -291,15 +326,15 @@ class Draw:
         bottom = min(self.screen.get_height(), y + height)
         if right <= left or bottom <= top:
             return
-        pixel = self.screen.map_rgb(color).to_bytes(
+        pixel_bytes = self.screen.map_rgb(color).to_bytes(
             self.screen.get_bytesize(), sys.byteorder,
         )
-        row = pixel * (right - left)
-        buffer = self.screen.get_buffer()
-        pitch = self.screen.get_pitch()
+        row_bytes = pixel_bytes * (right - left)
+        pixel_buffer = self.screen.get_buffer()
+        row_stride = self.screen.get_pitch()
         offset_x = left * self.screen.get_bytesize()
         for row_y in range(top, bottom):
-            buffer.write(row, row_y * pitch + offset_x)
+            pixel_buffer.write(row_bytes, row_y * row_stride + offset_x)
 
     @staticmethod
     def scale_image(

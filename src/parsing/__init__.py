@@ -1,6 +1,6 @@
 """Export the public parsing package interface."""
 
-from .modele import ConfigLevel, GameConfig
+from .models import ConfigLevel, GameConfig
 
 from .parser import Parser
 

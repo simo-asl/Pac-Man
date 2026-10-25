@@ -202,7 +202,7 @@ class GameController:
         except Exception as error:
             self.started = False
             if self.machine is not None:
-                self.machine.menu.name_error = (
+                self.machine.menu.error_message = (
                     f"Cannot start level: {error}"
                 )
                 self.change_state(GameState.MENU)
@@ -373,7 +373,7 @@ class GameController:
         Returns:
             None.
         """
-        self.game_ui.menu_game()
+        self.game_ui.draw_game()
 
         for pacgum in self.pacgums:
             pacgum.draw(self.drawer)
@@ -384,7 +384,7 @@ class GameController:
         self.player.draw(self.drawer)
         self.ghosts.draw_all()
         if self.game.paused and self.player.alive:
-            self.game_ui.panel('LIFE LOST', (
+            self.game_ui.draw_panel('LIFE LOST', (
                 f'LIVES LEFT: {self.player.lives}', 'GET READY TO CONTINUE',
             ))
 
@@ -396,7 +396,7 @@ class GameController:
         """
         self.draw_playing()
         if self.pause_instructions:
-            self.game_ui.panel('HOW TO PLAY', (
+            self.game_ui.draw_panel('HOW TO PLAY', (
                 *INSTRUCTIONS, 'ENTER / ESC BACK TO PAUSE',
             ))
         else:
@@ -406,7 +406,7 @@ class GameController:
                     ('RESUME', 'INSTRUCTIONS', 'MAIN MENU')
                 )
             )
-            self.game_ui.panel('PAUSED', (
+            self.game_ui.draw_panel('PAUSED', (
                 *choices, 'UP / DOWN SELECT   ENTER CONFIRM',
             ))
 
@@ -419,7 +419,7 @@ class GameController:
         self.draw_playing()
         reason = ('TIME RAN OUT' if self.game.level_time_remaining() == 0
                   else 'NO LIVES LEFT')
-        self.game_ui.panel('GAME OVER - YOU LOST', (
+        self.game_ui.draw_panel('GAME OVER - YOU LOST', (
             reason, f'FINAL SCORE: {self.game.score}',
             'ENTER SAVE YOUR SCORE',
         ))
@@ -431,6 +431,6 @@ class GameController:
             None.
         """
         self.draw_playing()
-        self.game_ui.panel('LEVEL COMPLETE', (
+        self.game_ui.draw_panel('LEVEL COMPLETE', (
             f'SCORE: {self.game.score}', 'ENTER NEXT LEVEL',
         ))

@@ -1,4 +1,4 @@
-"""Keyboard-driven menu, instructions, results and highscore entry."""
+"""Handle menu navigation, name entry, and highscore submission."""
 
 from __future__ import annotations
 
@@ -7,180 +7,134 @@ from typing import TYPE_CHECKING
 import pygame
 
 from ..game.highscore import High, score
-from .content import INSTRUCTIONS
 from .draw import Draw
+from .menu_view import MenuView
 from .state import GameState
 
 if TYPE_CHECKING:
     from .state_machine import StateMachine
 
-GOLD = (255, 220, 50)
-TEXT = (240, 240, 240)
-MUTED = (180, 190, 210)
-ERROR = (255, 110, 110)
-
 
 class Menu:
-    """Keep navigation and score saving in one menu state handler."""
+    """Own menu state and input while MenuView owns page rendering."""
 
-    def __init__(self, draw: Draw) -> None:
-        """Initialize this object and its runtime dependencies.
+    def __init__(self, drawer: Draw) -> None:
+        """Initialize menu selection, form state, and its drawing view.
 
         Args:
-            draw: Drawing helper used to prepare or display game images.
+            drawer: Drawing helper shared by all menu screens.
 
         Returns:
             None.
         """
-        self.draw = draw
-        self.width, self.height = draw.screen.get_size()
-        self.size = max(18, self.height // 32)
-        self.selected = 0
+        self.view = MenuView(drawer)
         self.options = ['START GAME', 'HIGHSCORES', 'INSTRUCTIONS', 'EXIT']
+        self.selected_index = 0
         self.player_name = ''
-        self.name_error = ''
+        self.error_message = ''
         self.machine: StateMachine | None = None
-        self.images = {}
-        for state, filename in (
-            (GameState.MENU, 'main_menu.png'),
-            (GameState.HIGHSCORES, 'highscores.png'),
-            (GameState.INSTRUCTIONS, 'instructions.png'),
-            (GameState.VICTORY, 'victory_image.png'),
-            (GameState.NAME_INPUT, 'name_input.png'),
-        ):
-            image = draw.load_image(
-                f'src/game/assets/better_backgrounds/{filename}'
-            )
-            self.images[state] = draw.scale_image(
-                image, (self.width, self.height)
-            )
-        self.high = High('highscores.json')
-        self.scores: list[score] = []
+        self.highscore_store = High('highscores.json')
+        self.high_scores: list[score] = []
 
     def set_machine(self, state_machine: StateMachine) -> None:
-        """Attach the state machine used for screen transitions.
+        """Connect navigation and load scores from the configured file.
 
         Args:
-            state_machine: State machine coordinating menu and gameplay
-                screens.
+            state_machine: Coordinator owning the active game configuration.
 
         Returns:
             None.
         """
         self.machine = state_machine
-        self.high = High(state_machine.game.config.highscore_filename)
-        self.scores = self.high.get_top_scores()
+        self.highscore_store = High(
+            state_machine.game.config.highscore_filename
+        )
+        self.high_scores = self.highscore_store.get_top_scores()
 
-    def move_selection(self, direction: int) -> None:
-        """Wrap keyboard selection around the available choices.
+    def _handle_main_menu_key(self, key: int) -> None:
+        """Move the selection or activate the chosen main-menu action.
 
         Args:
-            direction: Signed number of menu options to move by.
+            key: Pygame key code from a key-down event.
 
         Returns:
             None.
         """
-        self.selected = (self.selected + direction) % len(self.options)
+        if key in (pygame.K_UP, pygame.K_DOWN):
+            selection_step = -1 if key == pygame.K_UP else 1
+            self.selected_index = (
+                self.selected_index + selection_step
+            ) % len(self.options)
+        elif key == pygame.K_RETURN:
+            self._activate_selection()
 
-    def select(self) -> str:
-        """Return the currently selected action.
+    def _activate_selection(self) -> None:
+        """Execute the selected action using the connected state machine.
 
         Returns:
-            Label of the currently selected main-menu option.
+            None.
         """
-        return self.options[self.selected]
+        if self.machine is None:
+            return
+        selected_action = self.options[self.selected_index]
+        if selected_action == 'START GAME':
+            self.error_message = ''
+            self.machine.game.start_game()
+        elif selected_action == 'HIGHSCORES':
+            self.high_scores = self.highscore_store.get_top_scores()
+            self.machine.change_state(GameState.HIGHSCORES)
+        elif selected_action == 'INSTRUCTIONS':
+            self.machine.change_state(GameState.INSTRUCTIONS)
+        elif selected_action == 'EXIT':
+            self.machine.running = False
 
-    def line(
-        self, text: str, row: float, color: tuple[int, int, int] = TEXT,
-        large: bool = False,
-    ) -> None:
-        """Place centered text inside the artwork's clear middle area.
+    def _handle_name_input_key(self, event: pygame.event.Event) -> None:
+        """Edit the name field or submit its contents.
 
         Args:
-            text: Text to measure or render.
-            row: Vertical position as a fraction of the window height.
-            color: RGB color for the pixels, outline or text.
-            large: Whether to use the larger heading font size.
+            event: Key-down event containing a key code and typed text.
 
         Returns:
             None.
         """
-        self.draw.draw_text(
-            text, self.width // 2, int(self.height * row),
-            self.size * 2 if large else self.size, color, True,
-            max_width=self.width * 3 // 5,
-        )
+        if event.key == pygame.K_BACKSPACE:
+            self.player_name = self.player_name[:-1]
+            self.error_message = ''
+        elif event.key == pygame.K_RETURN:
+            self._submit_score()
+        else:
+            typed_character = event.unicode
+            if (typed_character and typed_character.isascii()
+                    and (typed_character.isalnum() or typed_character == ' ')
+                    and len(self.player_name) < 10):
+                self.player_name += typed_character
+                self.error_message = ''
 
-    def page(self, state: GameState, title: str, hint: str) -> None:
-        """Frame content with the original artwork and a readable panel.
-
-        Args:
-            state: Screen state whose input or content is being processed.
-            title: Heading shown at the top of the screen or panel.
-            hint: Keyboard guidance shown at the bottom of the page.
-
-        Returns:
-            None.
-        """
-        self.draw.draw_image(self.images[state], 0, 0)
-        self.draw.fill_rect(
-            self.width // 5, self.height // 10,
-            self.width * 3 // 5, self.height * 4 // 5, (8, 12, 22),
-        )
-        self.draw.draw_rect(
-            self.width // 5, self.height // 10,
-            self.width * 3 // 5, self.height * 4 // 5, GOLD, 2,
-        )
-        self.line(title, .15, GOLD, True)
-        self.line(hint, .83, MUTED)
-
-    def draw_menu(self) -> None:
-        """Show all four required main-menu actions.
+    def _submit_score(self) -> None:
+        """Validate and save the name form before returning to the menu.
 
         Returns:
-            None.
+            None. Validation and file failures stay on the current form.
         """
-        self.page(
-            GameState.MENU, 'PAC-MAN', 'UP / DOWN SELECT   ENTER CONFIRM'
-        )
-        for index, option in enumerate(self.options):
-            self.line(
-                ('> ' if index == self.selected else '') + option,
-                .34 + index * .1, GOLD if index == self.selected else TEXT,
-            )
-        if self.name_error:
-            self.line(self.name_error, .76, ERROR)
-
-    def draw_highscore(self, scores: list[score]) -> None:
-        """Fit all ten entries, with separate columns for names and scores.
-
-        Args:
-            scores: Ranked highscore entries to display, limited to ten.
-
-        Returns:
-            None.
-        """
-        self.page(GameState.HIGHSCORES, 'HIGH SCORES', 'ENTER / ESC BACK')
-        if not scores:
-            self.line('No scores yet. Start your first game!', .46)
-        for index, entry in enumerate(scores[:10]):
-            y = int(self.height * (.28 + index * .048))
-            self.draw.draw_text(
-                f'{index + 1:2}.  {entry.name}', self.width * 6 // 25,
-                y, self.size, GOLD if index == 0 else TEXT,
-                max_width=self.width * 3 // 10,
-            )
-            self.draw.draw_text(
-                str(entry.score), self.width * 17 // 25, y,
-                self.size, TEXT, True, max_width=self.width // 7,
-            )
+        if self.machine is None:
+            return
+        if not self.highscore_store.valid_name(self.player_name):
+            self.error_message = 'Enter 1-10 letters, numbers or spaces.'
+            return
+        final_score = self.machine.game.game.score
+        if not self.highscore_store.add_score(self.player_name, final_score):
+            self.error_message = 'Cannot save score. Check the file and retry.'
+            return
+        self.high_scores = self.highscore_store.get_top_scores()
+        self.error_message = ''
+        self.machine.change_state(GameState.MENU)
 
     def handle_keys(self, state: GameState, event: pygame.event.Event) -> None:
-        """Apply keyboard events to the current screen state.
+        """Route one keyboard event to the active menu action.
 
         Args:
-            state: Screen state whose input or content is being processed.
-            event: Pygame keyboard event to process.
+            state: Menu page receiving the event.
+            event: Pygame input event; events other than key-down are ignored.
 
         Returns:
             None.
@@ -188,97 +142,64 @@ class Menu:
         if event.type != pygame.KEYDOWN or self.machine is None:
             return
         if state == GameState.MENU:
-            if event.key in (pygame.K_UP, pygame.K_DOWN):
-                self.move_selection(-1 if event.key == pygame.K_UP else 1)
-            elif event.key == pygame.K_RETURN:
-                action = self.select()
-                if action == 'START GAME':
-                    self.name_error = ''
-                    self.machine.game.start_game()
-                elif action == 'HIGHSCORES':
-                    self.scores = self.high.get_top_scores()
-                    self.machine.change_state(GameState.HIGHSCORES)
-                elif action == 'INSTRUCTIONS':
-                    self.machine.change_state(GameState.INSTRUCTIONS)
-                else:
-                    self.machine.running = False
-        elif state in (GameState.HIGHSCORES, GameState.INSTRUCTIONS):
-            if event.key in (pygame.K_ESCAPE, pygame.K_RETURN):
-                self.machine.change_state(GameState.MENU)
-        elif state == GameState.VICTORY:
-            if event.key in (pygame.K_RETURN, pygame.K_ESCAPE):
-                self.begin_name_input()
+            self._handle_main_menu_key(event.key)
         elif state == GameState.NAME_INPUT:
-            if event.key == pygame.K_BACKSPACE:
-                self.player_name = self.player_name[:-1]
-                self.name_error = ''
-            elif event.key == pygame.K_RETURN:
-                if not self.high.valid_name(self.player_name):
-                    self.name_error = 'Enter 1-10 letters, numbers or spaces.'
-                elif self.high.add_score(
-                    self.player_name, self.machine.game.game.score
-                ):
-                    self.scores = self.high.get_top_scores()
-                    self.name_error = ''
-                    self.machine.change_state(GameState.MENU)
-                else:
-                    self.name_error = (
-                        'Cannot save score. Check the file and retry.'
-                    )
-            elif (event.unicode and event.unicode.isascii()
-                  and (event.unicode.isalnum() or event.unicode == ' ')
-                  and len(self.player_name) < 10):
-                self.player_name += event.unicode
-                self.name_error = ''
+            self._handle_name_input_key(event)
+        elif event.key in (pygame.K_ESCAPE, pygame.K_RETURN):
+            if state == GameState.VICTORY:
+                self.begin_name_input()
+            elif state in (GameState.HIGHSCORES, GameState.INSTRUCTIONS):
+                self.machine.change_state(GameState.MENU)
 
     def begin_name_input(self) -> None:
-        """Reset entry when a new game finishes.
+        """Clear the name form when a game finishes.
 
         Returns:
             None.
         """
         self.player_name = ''
-        self.name_error = ''
+        self.error_message = ''
         if self.machine is not None:
             self.machine.change_state(GameState.NAME_INPUT)
 
-    def run(self, state: GameState, keys: list[pygame.event.Event]) -> None:
-        """Process frame input and render the current screen.
+    def _render(self, state: GameState) -> None:
+        """Select the view method for the current menu page.
 
         Args:
-            state: Screen state whose input or content is being processed.
-            keys: Keyboard events collected for the current frame.
+            state: Menu page to render without changing game state.
 
         Returns:
             None.
         """
-        for event in keys:
+        if state == GameState.MENU:
+            self.view.draw_menu(
+                self.options, self.selected_index, self.error_message,
+            )
+        elif state == GameState.HIGHSCORES:
+            self.view.draw_highscore(self.high_scores)
+        elif state == GameState.INSTRUCTIONS:
+            self.view.draw_instructions()
+        elif self.machine is not None:
+            final_score = self.machine.game.game.score
+            if state == GameState.VICTORY:
+                self.view.draw_victory(final_score)
+            elif state == GameState.NAME_INPUT:
+                self.view.draw_name_input(
+                    final_score, self.player_name, self.error_message,
+                )
+
+    def run(self, state: GameState, events: list[pygame.event.Event]) -> None:
+        """Run a menu frame, stopping when an input changes the screen.
+
+        Args:
+            state: Menu page active at the start of the frame.
+            events: Input events collected for this frame.
+
+        Returns:
+            None.
+        """
+        for event in events:
             self.handle_keys(state, event)
             if self.machine is not None and self.machine.state != state:
                 return
-        if state == GameState.MENU:
-            self.draw_menu()
-        elif state == GameState.HIGHSCORES:
-            self.draw_highscore(self.scores)
-        elif state == GameState.INSTRUCTIONS:
-            self.page(state, 'HOW TO PLAY', 'ENTER / ESC BACK')
-            for index, text in enumerate(INSTRUCTIONS):
-                self.line(text, .29 + index * .066)
-        elif self.machine is not None:
-            points = self.machine.game.game.score
-            if state == GameState.VICTORY:
-                self.page(state, 'YOU WIN!', 'ENTER SAVE YOUR SCORE')
-                self.line('Congratulations! Every level cleared.', .36)
-                self.line(f'FINAL SCORE: {points}', .5, GOLD, True)
-            elif state == GameState.NAME_INPUT:
-                self.page(
-                    state, 'SAVE YOUR SCORE', 'TYPE YOUR NAME / ENTER SAVE'
-                )
-                self.line(f'FINAL SCORE: {points}', .32, GOLD)
-                self.line(self.player_name + '_', .46, GOLD, True)
-                self.line(
-                    f'Letters, numbers and spaces: {len(self.player_name)}/10',
-                    .59, MUTED,
-                )
-                self.line(self.name_error or 'Backspace to edit.', .7,
-                          ERROR if self.name_error else MUTED)
+        self._render(state)

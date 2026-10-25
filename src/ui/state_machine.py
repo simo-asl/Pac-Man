@@ -1,4 +1,4 @@
-"""Export the public state_machine package interface."""
+"""Route frames to the handler registered for the active screen."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ class StateMachine:
     """Dispatch keyboard events and rendering to the active screen."""
 
     def __init__(self, menu: Menu, game: GameController) -> None:
-        """Initialize this object and its runtime dependencies.
+        """Register menu and gameplay handlers for every screen.
 
         Args:
             menu: Menu handler used for navigation and highscore entry.
@@ -28,7 +28,7 @@ class StateMachine:
         self.menu = menu
         self.game = game
         self.state = GameState.MENU
-        self.objects: dict[GameState, Menu | GameController] = {
+        self.screen_handlers: dict[GameState, Menu | GameController] = {
             GameState.HIGHSCORES: self.menu,
             GameState.PLAYING: self.game,
             GameState.PAUSED: self.game,
@@ -52,14 +52,14 @@ class StateMachine:
         """
         self.state = new_state
 
-    def run_state(self, keys: list[pygame.event.Event]) -> None:
+    def run_state(self, events: list[pygame.event.Event]) -> None:
         """Pass input and drawing to the current screen.
 
         Args:
-            keys: Keyboard events collected for the current frame.
+            events: Input events collected for the current frame.
 
         Returns:
             None.
         """
-        scene = self.objects[self.state]
-        scene.run(self.state, keys)
+        screen_handler = self.screen_handlers[self.state]
+        screen_handler.run(self.state, events)
