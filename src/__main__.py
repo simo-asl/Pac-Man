@@ -1,4 +1,7 @@
+"""Validate configuration and launch the Pac-Man application."""
+
 import sys
+import time
 
 import pygame
 
@@ -8,20 +11,25 @@ from .ui import Draw, Menu
 from .ui.state_machine import StateMachine
 
 
-def main() -> None:
-    if len(sys.argv) != 2:
-        print("Usage: python -m src <config_file>")
-        return
+WINDOW_SIZE = (960, 640)
 
-    pygame.init()
+
+def main() -> int:
+    """Validate arguments, run the game loop and report failures.
+
+    Returns:
+        Zero on normal exit, or one for invalid usage or startup failure.
+    """
+    if len(sys.argv) != 2:
+        print("Usage: python3 pac-man.py config.json")
+        return 1
 
     try:
+        pygame.init()
         config = Parser(sys.argv[1]).parser()
 
-        screen = pygame.display.set_mode((1800, 1200))
+        screen = pygame.display.set_mode(WINDOW_SIZE)
         pygame.display.set_caption("Pac-Man")
-
-        clock = pygame.time.Clock()
 
         draw = Draw(screen)
         menu = Menu(draw)
@@ -32,6 +40,7 @@ def main() -> None:
         menu.set_machine(machine)
         game.set_machine(machine)
         while machine.running:
+            frame_start = time.monotonic()
             events = pygame.event.get()
 
             for event in events:
@@ -44,17 +53,18 @@ def main() -> None:
             machine.run_state(events)
 
             pygame.display.flip()
-            clock.tick(60)
+            delay = 1 / 60 - (time.monotonic() - frame_start)
+            if delay > 0:
+                time.sleep(delay)
 
-        pygame.quit()
-    except Exception:
-        import traceback
-
-        traceback.print_exc()
+        return 0
+    except Exception as error:
+        print(f"Pac-Man: {error}")
+        return 1
 
     finally:
         pygame.quit()
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

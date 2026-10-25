@@ -1,14 +1,20 @@
+"""Validate, rank and persist the top ten highscores."""
+
 from pathlib import Path
 
 from pydantic import BaseModel, Field, ValidationError
 
 
 class score(BaseModel):
+    """Validate a player name and a nonnegative integer score.
+    """
     name: str
     score: int = Field(ge=0, strict=True)
 
 
 class high_score(BaseModel):
+    """Validate the collection stored in a highscore JSON file.
+    """
     scores: list[score]
 
 
@@ -16,10 +22,27 @@ class High:
     """Manage persistent Pac-Man highscores."""
 
     def __init__(self, path_name: str) -> None:
+        """Initialize this object and its runtime dependencies.
+
+        Args:
+            path_name: Filename used to load and save the highscore JSON
+                document.
+
+        Returns:
+            None.
+        """
         self.path = Path(path_name)
 
     def valid_name(self, name: str) -> bool:
-        """Check whether a player name follows the subject rules."""
+        """Check whether a player name follows the subject rules.
+
+        Args:
+            name: Player name limited to ten ASCII letters, digits or
+                spaces.
+
+        Returns:
+            True if the name satisfies length and character restrictions.
+        """
         if not isinstance(name, str):
             return False
 
@@ -36,11 +59,22 @@ class High:
         return True
 
     def score_value(self, player: score) -> int:
-        """Return the score used for sorting."""
+        """Return the score used for sorting.
+
+        Args:
+            player: Saved highscore entry whose score is used for sorting.
+
+        Returns:
+            Nonnegative score used for descending ranking.
+        """
         return player.score
 
     def load_highscore(self) -> high_score:
-        """Load highscores, handling missing or invalid files."""
+        """Load highscores, handling missing or invalid files.
+
+        Returns:
+            Top ten valid entries, or an empty collection on file errors.
+        """
         try:
             if not self.path.exists():
                 return high_score(scores=[])
@@ -67,7 +101,14 @@ class High:
             return high_score(scores=[])
 
     def save_highscore(self, data: high_score) -> bool:
-        """Save highscores to a JSON file."""
+        """Save highscores to a JSON file.
+
+        Args:
+            data: Validated highscore collection to write to disk.
+
+        Returns:
+            True if writing succeeded; False if the file cannot be written.
+        """
         try:
             self.path.write_text(
                 data.model_dump_json(indent=4),
@@ -80,7 +121,17 @@ class High:
             return False
 
     def add_score(self, name: str, points: int) -> bool:
-        """Add a valid score and keep only the top 10."""
+        """Increase the current score by the supplied point amount.
+
+        Args:
+            name: Player name limited to ten ASCII letters, digits or
+                spaces.
+            points: Nonnegative score value awarded for this item or game.
+
+        Returns:
+            True if the name and score were accepted and the file was
+            saved.
+        """
         if not self.valid_name(name):
             return False
 
@@ -98,6 +149,10 @@ class High:
         return self.save_highscore(data)
 
     def get_top_scores(self) -> list[score]:
-        """Return the top 10 highscores."""
+        """Return the top 10 highscores.
+
+        Returns:
+            Up to ten saved entries ordered from highest to lowest score.
+        """
         data = self.load_highscore()
         return data.scores

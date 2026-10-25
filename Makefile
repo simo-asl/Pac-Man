@@ -1,20 +1,20 @@
-PYTHON = python3
-SRC = src
+PYTHON ?= .venv/bin/python
 ARGS ?= config.json
 
-
-.PHONY: install run clean lint
+.PHONY: install run debug lint clean
 
 install:
-	uv sync
+	uv sync --group dev
 
 run:
-	uv run $(PYTHON) -m $(SRC) $(ARGS)
+	$(PYTHON) pac-man.py $(ARGS)
+
+debug:
+	$(PYTHON) -m pdb pac-man.py $(ARGS)
 
 lint:
-	uv run flake8 $(SRC)
-	uv run mypy $(SRC)
+	.venv/bin/flake8 .
+	.venv/bin/mypy . --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
 
 clean:
-	find . -type d -name "__pycache__" -exec rm -rf {} +
-	find . -type f -name "*.pyc" -delete
+	$(PYTHON) -c "import pathlib, shutil; [shutil.rmtree(p) for p in pathlib.Path('src').rglob('__pycache__')]; [shutil.rmtree(p, ignore_errors=True) for p in map(pathlib.Path, ('__pycache__', '.mypy_cache', '.pytest_cache', '.ruff_cache', 'build'))]"

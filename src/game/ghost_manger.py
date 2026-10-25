@@ -1,5 +1,6 @@
+"""Coordinate ghost navigation and edible states."""
+
 import math
-import random
 import time
 
 from ..maze import DIRECTIONS, Maze
@@ -9,7 +10,20 @@ from .player import Player
 
 
 class GhostsManager:
+    """Coordinate ghost targets, movement and power states.
+    """
     def __init__(self, draw: Draw, maze: Maze, player: Player) -> None:
+        """Initialize this object and its runtime dependencies.
+
+        Args:
+            draw: Drawing helper used to prepare or display game images.
+            maze: Current maze with walls and grid-to-pixel conversion
+                helpers.
+            player: Player whose lives, position or power state is used.
+
+        Returns:
+            None.
+        """
         self.ghosts: list[Ghost] = []
         self.draw = draw
         self.maze = maze
@@ -25,6 +39,20 @@ class GhostsManager:
         kind: str = "blinky",
         speed: int = 2,
     ) -> None:
+        """Create and register a ghost at the supplied grid position.
+
+        Args:
+            x: Horizontal position in pixels.
+            y: Vertical position in pixels.
+            direction: Direction wall bit: 1 up, 2 right, 4 down, or 8
+                left.
+            corner: Grid coordinates of the ghost home corner.
+            kind: Ghost sprite and chase strategy name.
+            speed: Distance moved in pixels on each gameplay update.
+
+        Returns:
+            None.
+        """
         ghost = Ghost(x, y, self.maze, self.draw, direction,
                       corner, kind, speed)
         self.ghosts.append(ghost)
@@ -34,6 +62,16 @@ class GhostsManager:
         ghost: Ghost,
         target: tuple[int, int],
     ) -> tuple[int, int] | None:
+        """Choose a legal forward neighbor closest to the target.
+
+        Args:
+            ghost: Ghost whose position, mode or destination is being
+                processed.
+            target: Grid coordinates toward which the ghost should move.
+
+        Returns:
+            Next grid cell, or None if no legal neighbor exists.
+        """
         moves = self.maze.get_available_moves(ghost.x, ghost.y)
         dx, dy = DIRECTIONS[ghost.direction]
         reverse = (ghost.x - dx, ghost.y - dy)
@@ -52,6 +90,16 @@ class GhostsManager:
         self, player_pos: tuple[int, int], player_direction: int
     ) -> tuple[int, int]:
 
+        """Choose a target up to four cells ahead of the player.
+
+        Args:
+            player_pos: Grid coordinates of the player.
+            player_direction: Player heading as a north/east/south/west
+                wall bit.
+
+        Returns:
+            In-bounds grid coordinates ahead of the player.
+        """
         x, y = player_pos
         dx, dy = DIRECTIONS[player_direction]
         for distance in range(4, -1, -1):
@@ -67,6 +115,18 @@ class GhostsManager:
         player_direction: int,
         blinky_pos: tuple[int, int],
     ) -> tuple[int, int]:
+        """Reflect a point ahead of the player around Blinky.
+
+        Args:
+            player_pos: Grid coordinates of the player.
+            player_direction: Player heading as a north/east/south/west
+                wall bit.
+            blinky_pos: Grid coordinates of Blinky, used to calculate Inky
+                targets.
+
+        Returns:
+            Reflected target grid coordinates, possibly outside the maze.
+        """
         x, y = player_pos
         dx, dy = DIRECTIONS[player_direction]
         for distance in range(2, -1, -1):
@@ -84,6 +144,15 @@ class GhostsManager:
         self,
         ghost: Ghost,
     ) -> tuple[int, int] | None:
+        """Choose a legal neighbor farthest from the player.
+
+        Args:
+            ghost: Ghost whose position, mode or destination is being
+                processed.
+
+        Returns:
+            Next grid cell away from the player, or None if blocked.
+        """
         moves = self.maze.get_available_moves(ghost.x, ghost.y)
         dx, dy = DIRECTIONS[ghost.direction]
         reverse = (ghost.x - dx, ghost.y - dy)
@@ -99,9 +168,18 @@ class GhostsManager:
         )
 
     def is_collesion(self, ghost: Ghost) -> bool:
+        """Check whether this ghost overlaps the player collision circle.
+
+        Args:
+            ghost: Ghost whose position, mode or destination is being
+                processed.
+
+        Returns:
+            True if the player and ghost collision circles overlap.
+        """
         dx = self.player.x - ghost.pixel_x
         dy = self.player.y - ghost.pixel_y
-        colleesion_radis = self.player.radius + 10
+        colleesion_radis = self.player.radius + ghost.radius
 
         return dx * dx + dy * dy <= colleesion_radis**2
 
@@ -109,6 +187,15 @@ class GhostsManager:
         self,
         ghost: Ghost,
     ) -> None:
+        """Choose the next destination according to this ghost mode.
+
+        Args:
+            ghost: Ghost whose position, mode or destination is being
+                processed.
+
+        Returns:
+            None.
+        """
         if ghost.mode == "chase":
             player_pos = self.maze.pixel_to_grid(self.player.x, self.player.y)
             if ghost.kind == "blinky":
@@ -154,6 +241,11 @@ class GhostsManager:
         self,
     ) -> None:
 
+        """Choose destinations for ghosts that reached their targets.
+
+        Returns:
+            None.
+        """
         if self.frozen:
             return
         for ghost in self.ghosts:
@@ -161,22 +253,42 @@ class GhostsManager:
                 continue
             self.move_ghost(ghost)
 
-    def draw_all(self):
+    def draw_all(self) -> None:
+        """Draw every ghost using its current mode and direction.
+
+        Returns:
+            None.
+        """
         for ghost in self.ghosts:
             ghost.draw_ghost()
 
-    def update_all(self):
+    def update_all(self) -> None:
+        """Advance ghost positions unless the freeze cheat is active.
+
+        Returns:
+            None.
+        """
         if self.frozen:
             return
         for ghost in self.ghosts:
             ghost.update()
 
     def frighten_all(self) -> None:
+        """Make every uneaten ghost edible while player power is active.
+
+        Returns:
+            None.
+        """
         for ghost in self.ghosts:
             if ghost.mode != "eaten":
                 ghost.mode = "frightened"
 
     def restore_all(self) -> None:
+        """Restore frightened ghosts to their normal chase behavior.
+
+        Returns:
+            None.
+        """
         for ghost in self.ghosts:
             if ghost.mode == "frightened":
                 ghost.mode = "chase"

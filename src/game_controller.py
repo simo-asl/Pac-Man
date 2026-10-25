@@ -1,9 +1,17 @@
+"""Coordinate gameplay, keyboard input and screen transitions."""
+
+from typing import TYPE_CHECKING
+
 import pygame
+
+if TYPE_CHECKING:
+    from src.ui.state_machine import StateMachine
 
 from src.game import Game
 from src.game.cheats import Cheats
 from src.game.ghost_manger import GhostsManager
 from src.game.player import Player
+from src.game.pacgum import Pacgum, SuperPacgum
 from src.maze import Maze
 from src.parsing.parser import GameConfig
 from src.ui import Draw
@@ -12,21 +20,54 @@ from src.ui.state import GameState
 
 
 class GameController:
+    """Connect gameplay objects to menu and gameplay screens."""
+
+    player: Player
+    maze: Maze
+    cheats: Cheats
+    game_ui: GameUi
+    ghosts: GhostsManager
+    pacgums: list[Pacgum]
+    superpacgums: list[SuperPacgum]
+
     def __init__(
         self,
         screen: pygame.Surface,
         config: GameConfig,
     ) -> None:
+        """Initialize this object and its runtime dependencies.
+
+        Args:
+            screen: Surface used as the drawing target or game window.
+            config: Validated game configuration.
+
+        Returns:
+            None.
+        """
         self.screen = screen
         self.config = config
         self.drawer = Draw(screen)
-        self.machine = None
+        self.machine: StateMachine | None = None
         self.started = False
+        self.pause_selected = 0
 
-    def set_machine(self, machine) -> None:
+    def set_machine(self, machine: "StateMachine") -> None:
+        """Attach the state machine used for screen transitions.
+
+        Args:
+            machine: State machine coordinating menu and gameplay screens.
+
+        Returns:
+            None.
+        """
         self.machine = machine
 
     def start_game(self) -> None:
+        """Reset score, lives and progression for a new game.
+
+        Returns:
+            None.
+        """
         self.level = 0
         self.started = True
 
@@ -39,12 +80,17 @@ class GameController:
 
         self.remaining_lives = self.config.lives
 
-        self.setup_level()
+        self._setup_safely()
 
     def setup_level(self) -> None:
+        """Create the current maze, actors, pellets and drawing cache.
+
+        Returns:
+            None.
+        """
         if self.machine is None:
             return
-        if len(self.config.levels) == self.level:
+        if self.level >= len(self.config.levels):
             self.machine.change_state(GameState.VICTORY)
             return
         self.maze = Maze(
@@ -54,12 +100,20 @@ class GameController:
             self.screen.get_size(),
         )
 
-        player_spawn = self.maze.grid_to_pixel(5, 5)
+        center = self.maze.grid_to_pixel(
+            self.maze.columns // 2, self.maze.rows // 2
+        )
+        # The generator's central 42 motif can contain blocked cells.
+        player_spawn = min(
+            self.maze.get_walkable_positions(),
+            key=lambda point: (point[0] - center[0]) ** 2
+            + (point[1] - center[1]) ** 2,
+        )
 
         self.player = Player(
             player_spawn[0],
             player_spawn[1],
-            10,
+            max(2, self.maze.CELL_SIZE * 2 // 5),
             self.maze.WI,
             self.maze.HE,
             lives=self.remaining_lives,
@@ -76,7 +130,9 @@ class GameController:
             (0, self.maze.rows - 1),
         ]
 
-        superpac_positions = [self.maze.grid_to_pixel(x, y) for x, y in ghost_corners]
+        superpac_positions = [
+            self.maze.grid_to_pixel(x, y) for x, y in ghost_corners
+        ]
 
         positions = self.maze.get_walkable_positions()
 
@@ -121,18 +177,50 @@ class GameController:
         self.change_state(GameState.PLAYING)
 
     def next_level(self) -> None:
-        # hadi 7et lmaze zwina dyalk ma kadirch check lconfig.levels ch7al
-        # une fois kaytsalaw levels kayt7sb bli khssr so 9ad chi l3ba dl victory
+        """Advance progression while retaining score and remaining lives.
+
+        Returns:
+            None.
+        """
         self.remaining_lives = self.player.lives
 
         self.game.next_level()
         self.level += 1
 
-        self.setup_level()
+        self._setup_safely()
+
+    def _setup_safely(self) -> None:
+        """Return to the menu with feedback if level creation fails.
+
+        Returns:
+            None.
+        """
+        try:
+            self.setup_level()
+        except Exception as error:
+            self.started = False
+            if self.machine is not None:
+                self.machine.menu.name_error = (
+                    f"Cannot start level: {error}"
+                )
+                self.change_state(GameState.MENU)
 
     def change_state(self, new_state: GameState) -> None:
+        """Select the screen to process on the next frame.
+
+        Args:
+            new_state: Screen state to activate.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: No state machine has been attached.
+        """
         if self.machine is None:
-            raise RuntimeError("GameController needs set_machine(machine) first")
+            raise RuntimeError(
+                "GameController needs set_machine(machine) first"
+            )
         self.machine.change_state(new_state)
 
     def handle_keys(
@@ -140,25 +228,42 @@ class GameController:
         state: GameState,
         event: pygame.event.Event,
     ) -> None:
-        if event.type != pygame.KEYDOWN:
+        """Apply keyboard events to the current screen state.
+
+        Args:
+            state: Screen state whose input or content is being processed.
+            event: Pygame keyboard event to process.
+
+        Returns:
+            None.
+        """
+        if event.type != pygame.KEYDOWN or self.machine is None:
             return
 
         match state:
             case GameState.PLAYING:
-                if event.key == pygame.K_p:
-                    self.game.toggle_pause(self.player)
-                    self.change_state(GameState.PAUSED)
+                if event.key in (pygame.K_p, pygame.K_ESCAPE):
+                    if not self.game.paused:
+                        self.pause_selected = 0
+                        self.game.toggle_pause(self.player)
+                        self.change_state(GameState.PAUSED)
                 elif self.cheats.handle_key(event.key):
                     self.next_level()
 
             case GameState.PAUSED:
-                if event.key == pygame.K_p:
+                if event.key in (pygame.K_UP, pygame.K_DOWN):
+                    self.pause_selected = 1 - self.pause_selected
+                elif event.key in (pygame.K_p, pygame.K_ESCAPE) or (
+                    event.key == pygame.K_RETURN and self.pause_selected == 0
+                ):
                     self.game.toggle_pause(self.player)
                     self.change_state(GameState.PLAYING)
+                elif event.key == pygame.K_RETURN:
+                    self.change_state(GameState.MENU)
 
             case GameState.GAME_OVER:
                 if event.key == pygame.K_RETURN:
-                    self.change_state(GameState.NAME_INPUT)
+                    self.machine.menu.begin_name_input()
 
             case GameState.LEVEL_COMPLETE:
                 if event.key == pygame.K_RETURN:
@@ -168,23 +273,35 @@ class GameController:
         self,
         state: GameState,
         keys: pygame.event.Event | list[pygame.event.Event] | None = None,
-        **kwargs,
     ) -> None:
-        if not self.started:
+        """Process frame input and render the current screen.
+
+        Args:
+            state: Screen state whose input or content is being processed.
+            keys: Keyboard events collected for the current frame.
+
+        Returns:
+            None.
+        """
+        if not self.started or self.machine is None:
             return
 
         if keys is not None:
-            events = [keys] if isinstance(keys, pygame.event.EventType) else keys
+            events = (
+                [keys] if isinstance(keys, pygame.event.EventType) else keys
+            )
             for event in events:
                 self.handle_keys(state, event)
                 if self.machine.state != state:
-                    break
+                    return
 
         # A transition (e.g. pause) must not update gameplay again.
         if state == GameState.PLAYING and self.machine.state == state:
             self.update_playing()
 
-        self.screen.fill((0, 0, 0))
+        if self.machine.state != state:
+            return
+
         match state:
             case GameState.PLAYING:
                 self.draw_playing()
@@ -196,12 +313,19 @@ class GameController:
                 self.draw_level_complete()
 
     def update_playing(self) -> None:
+        """Advance movement, collisions and gameplay transitions.
+
+        Returns:
+            None.
+        """
         self.game.update_death(self.player, self.ghosts)
 
-        if not self.game.manual_pause and self.game.level_time_remaining() == 0:
+        if (not self.game.manual_pause
+                and self.game.level_time_remaining() == 0):
             self.player.dead()
 
-        if not self.game.paused and not self.game.manual_pause and self.player.alive:
+        if (not self.game.paused and not self.game.manual_pause
+                and self.player.alive):
             self.player.move(self.maze)
             self.player.update_power()
 
@@ -232,6 +356,11 @@ class GameController:
             self.change_state(GameState.GAME_OVER)
 
     def draw_playing(self) -> None:
+        """Draw the maze, live HUD, pellets, player and ghosts.
+
+        Returns:
+            None.
+        """
         self.game_ui.menu_game()
 
         for pacgum in self.pacgums:
@@ -240,45 +369,40 @@ class GameController:
         for superpac in self.superpacgums:
             superpac.draw(self.drawer)
 
-        self.player.draw(self.screen)
+        self.player.draw(self.drawer)
         self.ghosts.draw_all()
 
-    # tempo + not my part
-    # kanktb ghir paused nta dir features jdad la bghtiti
     def draw_paused(self) -> None:
+        """Offer resume and return-to-menu actions.
+
+        Returns:
+            None.
+        """
         self.draw_playing()
+        self.game_ui.panel('PAUSED', (
+            ('> ' if self.pause_selected == 0 else '') + 'RESUME',
+            ('> ' if self.pause_selected == 1 else '') + 'MAIN MENU',
+            'UP / DOWN SELECT   ENTER CONFIRM',
+        ))
 
-        self.drawer.draw_text(
-            "PAUSED",
-            self.screen.get_width() // 2,
-            self.screen.get_height() // 2,
-            80,
-            (255, 255, 255),
-            True,
-        )
-
-    # tempo + not my part + rsem chi l3ba wla animation
     def draw_game_over(self) -> None:
+        """Show the final score and prompt for highscore entry.
+
+        Returns:
+            None.
+        """
         self.draw_playing()
+        self.game_ui.panel('GAME OVER', (
+            f'FINAL SCORE: {self.game.score}', 'ENTER SAVE YOUR SCORE',
+        ))
 
-        self.drawer.draw_text(
-            "DIR CHI KHRYA",
-            self.screen.get_width() // 2,
-            self.screen.get_height() // 2,
-            90,
-            (255, 0, 0),
-            True,
-        )
-
-    # dir chi pic wla whatever
     def draw_level_complete(self) -> None:
-        self.draw_playing()
+        """Show the current score before advancing to the next level.
 
-        self.drawer.draw_text(
-            "DIR CHI KHRYA",
-            self.screen.get_width() // 2,
-            self.screen.get_height() // 2,
-            80,
-            (255, 255, 0),
-            True,
-        )
+        Returns:
+            None.
+        """
+        self.draw_playing()
+        self.game_ui.panel('LEVEL COMPLETE', (
+            f'SCORE: {self.game.score}', 'ENTER NEXT LEVEL',
+        ))

@@ -1,7 +1,11 @@
+"""Define menu and gameplay screen states."""
+
 from enum import Enum, auto
 
 
 class GameState(Enum):
+    """Enumerate every menu, gameplay and result screen.
+    """
     MENU = auto()
     PLAYING = auto()
     PAUSED = auto()

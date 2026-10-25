@@ -1,30 +1,92 @@
+*This project has been created as part of the 42 curriculum by tlaghzal, mel-asla.*
+
 # Pac-Man
 
-A Python project using Pygame and the 42 MazeGenerator package. The app lives
-directly in `src/main.py` and opens a generated maze preview.
+## Description
 
-## Setup
+A configurable Pac-Man game using Pygame, Tamzen bitmap lettering, Pydantic,
+Hjson and the assigned MazeGenerator package.
 
-Install [uv](https://docs.astral.sh/uv/), then run:
+## Instructions
+
+Install Python 3.12 or later and uv, then run:
 
 ```sh
-uv sync
-uv run python src/main.py
+make install
+make run
+# Equivalent commands after activating .venv:
+python3 pac-man.py config.json
+pac-man config.json
+python3 -m src config.json
 ```
 
-Python 3.12 is selected by `.python-version`. The project supports Python 3.12
-and 3.13; Pygame 2.6.1 does not provide a Python 3.14 wheel.
+The window is 960×640, sized for this PC’s 1024×768 desktop. Actor sprites
+scale to the maze tiles.
 
-## MazeGenerator dependency
+Use `make debug` for pdb, `make lint` for Flake8 and the subject's Mypy checks,
+and `make clean` to remove generated caches. Set `ARGS=other.json` to select
+another configuration. The console entry point is `src.__main__:main`.
 
-The supplied [MazeGenerator archive](https://cdn.intra.42.fr/document/document/55104/mazegenerator-00001.zip)
-contains a wheel rather than an installable source archive. Its extracted
-`mazegenerator-2.1.0-py3-none-any.whl` is stored under `vendor/` and declared
-as a local `uv` source in `pyproject.toml`, so `uv sync` can install it without
-downloading the original ZIP again. The download itself is ignored by Git.
+## Current game controls
 
-Close the preview window or press Escape to exit.
+Run `.venv/bin/python -m src config.json` after installing dependencies.
+Use Up/Down and Enter in menus, arrow keys to move, and P or Escape to
+pause/resume. The pause menu also offers Main Menu. Eat all pellets before
+the timer expires; completing all levels opens the victory screen. Both a win
+and a loss lead to name entry, score saving, then the main menu. Names accept
+1–10 ASCII letters, digits and spaces and must contain a non-space character.
+Save failures leave name entry open so you can fix the destination and retry.
+Cheats: I toggles invincibility, F freezes ghosts, L adds a life, S skips a level.
 
+## Configuration and recovery
 
+The configuration is a JSON object. Comments beginning with `#` or `//` and
+`/* ... */` blocks are supported outside quoted strings. Unknown keys are
+ignored. Missing or invalid fields produce a console message and use their
+own default, preserving other valid settings. Unreadable or malformed files
+use the complete default configuration.
 
-## tlaghzal - mel-asla
+| Key | Default | Accepted values |
+| --- | --- | --- |
+| `highscore_filename` | `highscores.json` | Nonempty file path |
+| `lives` | 3 | Integer ≥ 1 |
+| `pacgum` | 42 | Integer ≥ 0; at least 70% of corridors receive pellets |
+| `points_per_pacgum` | 10 | Integer ≥ 0 |
+| `points_per_super_pacgum` | 50 | Integer ≥ 0 |
+| `points_per_ghost` | 200 | Integer ≥ 0 |
+| `level_max_time` | 90 | Integer seconds ≥ 1 |
+| `levels` | 10 levels | Array of level objects; short arrays are padded to 10 |
+| `levels[].width` | 39 | Integer 5–100 |
+| `levels[].height` | 29 | Integer 5–70 |
+| `levels[].seed` | `null` | Integer or `null` |
+
+The first level defaults to seed 42; subsequent levels use the generator's
+random seed unless configured. Explicit seeds are respected. At most 100 levels
+are loaded. Dimension limits keep tiles visible in the fixed game window.
+Highscores load when the menu starts and save to `highscore_filename` at game
+end; the top ten appear in the Highscores page. The assigned generator is used
+with `perfect=False`; generation failures return to the menu with feedback.
+
+## Rendering libraries
+
+Pygame handles the window, events, images and pixel buffers. `Draw` owns
+rendering, including actor sprites and text. The `bdfparser` library reads the
+bundled Tamzen Bold 10×20 BDF font, whose glyphs are already drawn as bitmaps.
+The game copies those existing bits into cached images and resizes them;
+it never rasterizes a TrueType font. Pillow and Pygame's font API are unused.
+Hjson parses commented configuration and Pydantic validates its fields.
+
+The graphics API comparison is documented in [MLX.md](MLX.md).
+The font and its license are bundled under `src/assets/fonts/`.
+
+## Resources
+
+- [42 Paris MiniLibX API](https://github.com/42Paris/minilibx-linux/blob/master/mlx.h)
+- [Codam MLX42 API](https://github.com/codam-coding-college/MLX42/blob/master/include/MLX42/MLX42.h)
+- [bdfparser](https://github.com/tomchen/bdfparser)
+- [Tamzen bitmap font](https://github.com/sunaku/tamzen-font)
+- [Hjson syntax](https://hjson.github.io/syntax.html)
+- [Pydantic](https://docs.pydantic.dev/)
+
+AI assisted with UI and parser fixes, API comparison, docstrings, installation
+configuration and regression checks. Team members must review these changes.

@@ -1,3 +1,5 @@
+"""Manage scoring, collisions, level timing and pauses."""
+
 from .player import Player
 from .pacgum import Pacgum, SuperPacgum
 from .ghost_manger import GhostsManager
@@ -8,6 +10,8 @@ from ..parsing import GameConfig
 
 
 class Game:
+    """Manage score, pellet collisions, pauses and level deadlines.
+    """
     def __init__(
         self,
         screen: pygame.Surface,
@@ -16,6 +20,18 @@ class Game:
         config: GameConfig | None = None,
     ) -> None:
 
+        """Initialize this object and its runtime dependencies.
+
+        Args:
+            screen: Surface used as the drawing target or game window.
+            s_width: Width of the playable area in pixels.
+            s_height: Height of the playable area in pixels.
+            config: Validated game configuration; None uses default
+                settings.
+
+        Returns:
+            None.
+        """
         self.config = config if config is not None else GameConfig()
         self.level_start_time = pygame.time.get_ticks()
         self.total_pause_time = 0
@@ -31,12 +47,29 @@ class Game:
 
     def add_score(self, add: int) -> None:
 
+        """Increase the current score by the supplied point amount.
+
+        Args:
+            add: Nonnegative point amount to add to the current score.
+
+        Returns:
+            None.
+        """
         self.score += add
 
     def level_complete(
         self, pacgums: list[Pacgum], super_pacgums: list[SuperPacgum]
     ) -> bool:
 
+        """Check whether every normal and power pellet was eaten.
+
+        Args:
+            pacgums: Normal pellets belonging to the current level.
+            super_pacgums: Power pellets belonging to the current level.
+
+        Returns:
+            True if every normal and power pellet is eaten.
+        """
         for i in pacgums:
             if not i.eaten:
                 return False
@@ -46,6 +79,11 @@ class Game:
         return True
 
     def next_level(self) -> None:
+        """Advance progression while retaining score and remaining lives.
+
+        Returns:
+            None.
+        """
         self.level += 1
         self.level_start_time = pygame.time.get_ticks()
         self.total_pause_time = 0
@@ -56,6 +94,11 @@ class Game:
 
     def level_time_remaining(self) -> int:
 
+        """Calculate remaining seconds excluding game pauses.
+
+        Returns:
+            Nonnegative number of seconds left for the level.
+        """
         now = pygame.time.get_ticks()
 
         if self.manual_pause:
@@ -74,6 +117,14 @@ class Game:
         positions: list[tuple[int, int]]
     ) -> list[Pacgum]:
 
+        """Place normal pellets in at least seventy percent of corridors.
+
+        Args:
+            positions: Available corridor pixel centers for normal pellets.
+
+        Returns:
+            Normal pellets created at sampled corridor positions.
+        """
         pacgums = []
 
         minimum = len(positions) * 70 // 100
@@ -94,6 +145,14 @@ class Game:
 
     def create_superpac(self, pos: list[tuple[int, int]]) -> list[SuperPacgum]:
 
+        """Create power pellets at the supplied corner positions.
+
+        Args:
+            pos: Corner pixel centers for the power pellets.
+
+        Returns:
+            Power pellets created at the supplied positions.
+        """
         super_pacgums: list[SuperPacgum] = []
 
         for x, y in pos:
@@ -103,6 +162,15 @@ class Game:
         return super_pacgums
 
     def collision(self, player: Player, pacgum: Pacgum) -> None:
+        """Consume a touched pellet and apply its score and power effect.
+
+        Args:
+            player: Player whose lives, position or power state is used.
+            pacgum: Normal or power pellet to test against the player.
+
+        Returns:
+            None.
+        """
         dx = player.x - pacgum.x
         dy = player.y - pacgum.y
 
@@ -121,6 +189,17 @@ class Game:
                              pacgums: list[Pacgum],
                              ghosts: GhostsManager) -> None:
 
+        """Resolve pellet and ghost contacts for the active player.
+
+        Args:
+            player: Player whose lives, position or power state is used.
+            superpacgums: Power pellets belonging to the current level.
+            pacgums: Normal pellets belonging to the current level.
+            ghosts: Manager holding the ghosts affected by this operation.
+
+        Returns:
+            None.
+        """
         if self.paused or self.manual_pause or not player.alive:
             return
 
@@ -144,12 +223,25 @@ class Game:
                 break
 
     def start_death(self) -> None:
+        """Start the temporary pause before respawning surviving actors.
+
+        Returns:
+            None.
+        """
         if self.paused:
             return
         self.paused = True
         self.death_time = pygame.time.get_ticks()
 
-    def toggle_pause(self, player: Player):
+    def toggle_pause(self, player: Player) -> None:
+        """Pause or resume while preserving the timer and player power.
+
+        Args:
+            player: Player whose lives, position or power state is used.
+
+        Returns:
+            None.
+        """
         if self.paused:
             return
         now = pygame.time.get_ticks()
@@ -169,6 +261,15 @@ class Game:
 
     def update_death(self, player: Player, ghosts: GhostsManager) -> None:
 
+        """Respawn actors when the temporary death pause expires.
+
+        Args:
+            player: Player whose lives, position or power state is used.
+            ghosts: Manager holding the ghosts affected by this operation.
+
+        Returns:
+            None.
+        """
         if not self.paused:
             return
 
@@ -186,6 +287,15 @@ class Game:
 
     def reset_positions(self, player: Player, ghosts: GhostsManager) -> None:
 
+        """Restore player and ghost spawn positions and clear power.
+
+        Args:
+            player: Player whose lives, position or power state is used.
+            ghosts: Manager holding the ghosts affected by this operation.
+
+        Returns:
+            None.
+        """
         player.x, player.y = player.respawn
         player.target_x, player.target_y = player.respawn
         for ghost in ghosts.ghosts:

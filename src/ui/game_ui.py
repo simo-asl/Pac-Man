@@ -1,65 +1,91 @@
+"""Render a cached image maze, live HUD and game-state panels."""
+
 import pygame
 
 from ..game import Game, Player
 from ..maze import Maze
 from .draw import Draw
 
+GOLD = (255, 220, 50)
+TEXT = (240, 240, 240)
+
 
 class GameUi:
-    def __init__(self, draw: Draw, player: Player, game: Game, maze: Maze):
-        self.draw = draw
-        self.player = player
-        self.game = game
-        self.height = self.draw.screen.get_height()
-        self.maze = maze
-        self.width = self.draw.screen.get_width()
-        self.cache = {}
-        self.image = self.draw.load_image(
-            "src/game/assets/backgrounds/hud_background_1800x1200.png"
+    """Keep gameplay values visible around the playable grid."""
+
+    def __init__(
+        self, draw: Draw, player: Player, game: Game, maze: Maze
+    ) -> None:
+        """Initialize this object and its runtime dependencies.
+
+        Args:
+            draw: Drawing helper used to prepare or display game images.
+            player: Player whose lives, position or power state is used.
+            game: Current game controller or gameplay state.
+            maze: Current maze with walls and grid-to-pixel conversion
+                helpers.
+
+        Returns:
+            None.
+        """
+        self.draw, self.player, self.game, self.maze = draw, player, game, maze
+        self.width, self.height = draw.screen.get_size()
+        self.size = max(18, self.height // 30)
+        self.image = pygame.Surface((self.width, self.height))
+        painter = Draw(self.image)
+        painter.clear((5, 9, 18))
+        for y, row in enumerate(maze.maze):
+            for x, cell in enumerate(row):
+                painter.draw_maze(
+                    x, y, cell, maze.CELL_SIZE, maze.offset_x, maze.offset_y,
+                )
+
+    def menu_game(self) -> None:
+        """Draw the cached maze, score, lives, level and remaining time.
+
+        Returns:
+            None.
+        """
+        self.draw.draw_image(self.image, 0, 0)
+        remaining = max(0, int(self.game.level_time_remaining()))
+        values = (
+            f'LIVES: {self.player.lives}',
+            f'LEVEL: {self.maze.level + 1}/{len(self.game.config.levels)}',
+            f'SCORE: {self.game.score}',
+            f'TIME: {remaining // 60}:{remaining % 60:02}',
+        )
+        for index, text in enumerate(values):
+            self.draw.draw_text(
+                text, self.width * (2 * index + 1) // 8,
+                self.height // 30, self.size, GOLD, True,
+                max_width=self.width // 5,
+            )
+        self.draw.draw_text(
+            'ARROW KEYS MOVE   P / ESC PAUSE', self.width // 2,
+            self.height * 24 // 25, self.size * 3 // 4, TEXT, True,
         )
 
-    def menu_game(self):
-        offset_x = getattr(self.maze, "offset_x", (self.width - self.maze.WI) // 2)
+    def panel(self, title: str, lines: tuple[str, ...]) -> None:
+        """Show readable result or pause actions above the frozen maze.
 
-        offset_y = getattr(self.maze, "offset_y", (self.height - self.maze.HE) // 2)
-        if not self.cache.get(self.maze.level, None):
-            t = pygame.Surface((self.width, self.height))
-            surface_draw = Draw(t)
-            scaled = pygame.transform.scale(self.image, (self.width, self.height))
-            # TODO should fix the maze
-            # surface_draw.draw_image(scaled, 0, 0)
-            for y, row in enumerate(self.maze.maze):
-                for x, cell in enumerate(row):
-                    surface_draw.draw_maze(
-                        x,
-                        y,
-                        cell,
-                        self.maze.CELL_SIZE,
-                        offset_x,
-                        offset_y,
-                    )
-            self.cache[self.maze.level] = t
+        Args:
+            title: Heading shown at the top of the screen or panel.
+            lines: Ordered text rows displayed below the panel heading.
 
-        self.draw.screen.fill((0, 0, 0))
-        self.draw.draw_image(self.cache[self.maze.level], 0, 0)
+        Returns:
+            None.
+        """
+        x, y = self.width // 5, self.height // 4
+        width, height = self.width * 3 // 5, self.height // 2
+        self.draw.fill_rect(x, y, width, height, (8, 12, 22))
+        self.draw.draw_rect(x, y, width, height, GOLD, 2)
         self.draw.draw_text(
-            f"Level: {self.maze.level + 1}",
-            int((self.width // 5) * 4),
-            25,
-            80,
-            (255, 220, 50),
+            title, self.width // 2, y + height // 8,
+            self.size * 2, GOLD, True, max_width=width * 9 // 10,
         )
-        self.draw.draw_text(
-            f"Life: {self.player.lives}",
-            int((self.width // 5) * 0.5),
-            25,
-            80,
-            (255, 220, 50),
-        )
-        self.draw.draw_text(
-            f"Score: {self.game.score}",
-            int((self.width // 5) * 0.5),
-            self.height - 70,
-            80,
-            (255, 220, 50),
-        )
+        for index, text in enumerate(lines):
+            self.draw.draw_text(
+                text, self.width // 2,
+                y + height * (4 + index * 2) // 11,
+                self.size, TEXT, True, max_width=width * 9 // 10,
+            )
