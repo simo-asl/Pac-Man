@@ -53,7 +53,7 @@ class SuperPacgum(Pacgum):
 
     """Represent a larger pellet that grants temporary power.
     """
-    def __init__(self, x: int, y: int, points: int = 50) -> None:
+    def __init__(self, x: int, y: int,radius: int, points: int = 50) -> None:
         """Initialize this object and its runtime dependencies.
 
         Args:
@@ -64,4 +64,4 @@ class SuperPacgum(Pacgum):
         Returns:
             None.
         """
-        super().__init__(x, y, 7, points)
+        super().__init__(x, y, radius, points)

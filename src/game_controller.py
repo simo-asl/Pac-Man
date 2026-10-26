@@ -141,8 +141,8 @@ class GameController:
         if player_spawn in positions:
             positions.remove(player_spawn)
 
-        self.pacgums = self.game.create_pacgums(positions)
-        self.superpacgums = self.game.create_superpac(superpac_positions)
+        self.pacgums = self.game.create_pacgums(positions, self.maze.CELL_SIZE)
+        self.superpacgums = self.game.create_superpac(superpac_positions, self.maze.CELL_SIZE)
 
         self.ghosts = GhostsManager(
             self.drawer,

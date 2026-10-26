@@ -103,7 +103,8 @@ class Game:
 
     def create_pacgums(
         self,
-        positions: list[tuple[int, int]]
+        positions: list[tuple[int, int]],
+        cell_size: int
     ) -> list[Pacgum]:
 
         """Place normal pellets in at least seventy percent of corridors.
@@ -121,18 +122,22 @@ class Game:
 
         selected = random.sample(positions, count)
 
+        radius = max(2, round(cell_size * 0.10))
         for x, y in selected:
             pacgum = Pacgum(
                 x,
                 y,
-                3,
-                self.config.points_per_pacgum
+                radius,
+                self.config.points_per_pacgum,
             )
             pacgums.append(pacgum)
 
         return pacgums
 
-    def create_superpac(self, pos: list[tuple[int, int]]) -> list[SuperPacgum]:
+    def create_superpac(self,
+        pos: list[tuple[int, int]],
+        cell_size: int
+        ) -> list[SuperPacgum]:
 
         """Create power pellets at the supplied corner positions.
 
@@ -144,9 +149,10 @@ class Game:
         """
         super_pacgums: list[SuperPacgum] = []
 
+        radius = max(2, round(cell_size * 0.18))
         for x, y in pos:
             super_pacgums.append(
-                SuperPacgum(x, y, self.config.points_per_super_pacgum))
+                SuperPacgum(x, y, radius, self.config.points_per_super_pacgum))
 
         return super_pacgums
 
