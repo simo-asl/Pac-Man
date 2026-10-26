@@ -168,8 +168,11 @@ levels. Timeout ends the game. Normal completion and `S` use the same progressio
 path.
 
 `Game` handles score, pellet/ghost collisions, level timing and death pauses.
-`GhostsManager` chooses open routes, moves frightened ghosts away from the
-player, and checks eaten-ghost respawn. Remaining gameplay defects are recorded
+`GhostsManager` uses standard breadth-first search (BFS) to make every ghost
+follow a shortest open path to the player's current cell. Ghosts finish each
+cell before choosing their next step. Frightened ghosts move away from the
+player without reversing unless at a dead end; eaten ghosts use BFS to return
+to their spawn. Remaining gameplay defects are recorded
 in [the bug list](project-management/BUGS.md), not hidden by the test results.
 
 Pausing also stops eaten-ghost respawn, player power and the level timer.

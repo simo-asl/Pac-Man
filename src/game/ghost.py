@@ -38,7 +38,7 @@ class Ghost:
             direction: Direction wall bit: 1 up, 2 right, 4 down, or 8
                 left.
             corner: Grid coordinates of the ghost home corner.
-            kind: Ghost sprite and chase strategy name.
+            kind: Ghost sprite name.
             speed: Distance moved in pixels on each gameplay update.
 
         Returns:

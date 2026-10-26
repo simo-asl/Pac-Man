@@ -1,7 +1,7 @@
 """Coordinate ghost navigation and edible states."""
 
-from collections import deque
 import time
+from collections import deque
 
 from ..maze import DIRECTIONS, Maze
 from ..ui import Draw
@@ -10,8 +10,8 @@ from .player import Player
 
 
 class GhostsManager:
-    """Coordinate ghost targets, movement and power states.
-    """
+    """Coordinate ghost targets, movement and power states."""
+
     def __init__(self, draw: Draw, maze: Maze, player: Player) -> None:
         """Initialize this object and its runtime dependencies.
 
@@ -47,14 +47,15 @@ class GhostsManager:
             direction: Direction wall bit: 1 up, 2 right, 4 down, or 8
                 left.
             corner: Grid coordinates of the ghost home corner.
-            kind: Ghost sprite and chase strategy name.
+            kind: Ghost sprite name.
             speed: Distance moved in pixels on each gameplay update.
 
         Returns:
             None.
         """
-        ghost = Ghost(x, y, self.maze, self.draw, direction,
-                      corner, kind, speed)
+        ghost = Ghost(
+            x, y, self.maze, self.draw, direction, corner, kind, speed
+        )
         self.ghosts.append(ghost)
 
     def choose_next_tile(
@@ -62,7 +63,7 @@ class GhostsManager:
         ghost: Ghost,
         target: tuple[int, int],
     ) -> tuple[int, int] | None:
-        """Follow an open route to the closest reachable target cell.
+        """Use BFS to find the first step on a shortest path to the target.
 
         Args:
             ghost: Ghost whose position, mode or destination is being
@@ -70,89 +71,27 @@ class GhostsManager:
             target: Grid coordinates toward which the ghost should move.
 
         Returns:
-            Next route cell, or None if already at the closest reachable
-            cell.
+            Next route cell, or None if at the target or it is unreachable.
         """
         start = (ghost.x, ghost.y)
+        if start == target:
+            return None
         queue = deque([start])
         parents: dict[tuple[int, int], tuple[int, int] | None] = {start: None}
-        closest = start
-        best_distance = ((start[0] - target[0]) ** 2
-                         + (start[1] - target[1]) ** 2)
         while queue:
             current = queue.popleft()
-            distance = ((current[0] - target[0]) ** 2
-                        + (current[1] - target[1]) ** 2)
-            if distance < best_distance:
-                closest, best_distance = current, distance
             if current == target:
-                closest = current
-                break
+                step = current
+                while parents[step] != start:
+                    parent = parents[step]
+                    assert parent is not None
+                    step = parent
+                return step
             for neighbor in self.maze.get_available_moves(*current):
                 if neighbor not in parents:
                     parents[neighbor] = current
                     queue.append(neighbor)
-        if closest == start:
-            return None
-        while parents[closest] != start:
-            parent = parents[closest]
-            assert parent is not None
-            closest = parent
-        return closest
-
-    def get_pinky_target(
-        self, player_pos: tuple[int, int], player_direction: int
-    ) -> tuple[int, int]:
-
-        """Choose a target up to four cells ahead of the player.
-
-        Args:
-            player_pos: Grid coordinates of the player.
-            player_direction: Player heading as a north/east/south/west
-                wall bit.
-
-        Returns:
-            In-bounds grid coordinates ahead of the player.
-        """
-        x, y = player_pos
-        dx, dy = DIRECTIONS[player_direction]
-        for distance in range(4, -1, -1):
-            tx = x + dx * distance
-            ty = y + dy * distance
-            if self.maze.is_inside(tx, ty):
-                return tx, ty
-        return player_pos
-
-    def get_inky_target(
-        self,
-        player_pos: tuple[int, int],
-        player_direction: int,
-        blinky_pos: tuple[int, int],
-    ) -> tuple[int, int]:
-        """Reflect a point ahead of the player around Blinky.
-
-        Args:
-            player_pos: Grid coordinates of the player.
-            player_direction: Player heading as a north/east/south/west
-                wall bit.
-            blinky_pos: Grid coordinates of Blinky, used to calculate Inky
-                targets.
-
-        Returns:
-            Reflected target grid coordinates, possibly outside the maze.
-        """
-        x, y = player_pos
-        dx, dy = DIRECTIONS[player_direction]
-        for distance in range(2, -1, -1):
-            tx = x + dx * distance
-            ty = y + dy * distance
-            if self.maze.is_inside(tx, ty):
-                target_two = tx, ty
-                break
-
-        target_x = 2 * target_two[0] - blinky_pos[0]
-        target_y = 2 * target_two[1] - blinky_pos[1]
-        return target_x, target_y
+        return None
 
     def choose_frightened_tile(
         self,
@@ -170,6 +109,11 @@ class GhostsManager:
         moves = self.maze.get_available_moves(ghost.x, ghost.y)
         if not moves:
             return None
+        dx, dy = DIRECTIONS[ghost.direction]
+        previous = (ghost.x - dx, ghost.y - dy)
+        forward_moves = [move for move in moves if move != previous]
+        if forward_moves:
+            moves = forward_moves
         player_pos = self.maze.pixel_to_grid(self.player.x, self.player.y)
         return max(
             moves,
@@ -210,27 +154,7 @@ class GhostsManager:
         best_pos = None
         if ghost.mode == "chase":
             player_pos = self.maze.pixel_to_grid(self.player.x, self.player.y)
-            target = player_pos
-            if ghost.kind == "pinky":
-                target = self.get_pinky_target(
-                    player_pos, self.player.direction)
-            elif ghost.kind == "inky":
-                blinky = next(
-                    (g for g in self.ghosts if g.kind == "blinky"), None)
-                if blinky is None:
-                    return
-                target = self.get_inky_target(
-                    player_pos, self.player.direction, (blinky.x, blinky.y)
-                )
-            elif ghost.kind == "clyde":
-                distance_square = (ghost.x - player_pos[0]) ** 2 + (
-                    ghost.y - player_pos[1]
-                ) ** 2
-                if distance_square >= 64:
-                    target = player_pos
-                else:
-                    target = ghost.corner
-            best_pos = self.choose_next_tile(ghost, target)
+            best_pos = self.choose_next_tile(ghost, player_pos)
         elif ghost.mode == "frightened":
             best_pos = self.choose_frightened_tile(ghost)
         elif ghost.mode == "eaten":
@@ -248,7 +172,6 @@ class GhostsManager:
     def move_all(
         self,
     ) -> None:
-
         """Choose destinations for ghosts that reached their targets.
 
         Returns:
@@ -257,8 +180,10 @@ class GhostsManager:
         if self.frozen:
             return
         for ghost in self.ghosts:
-            if (ghost.mode == "eaten"
-                    and time.monotonic() - ghost.time_eaten >= 5):
+            if (
+                ghost.mode == "eaten"
+                and time.monotonic() - ghost.time_eaten >= 5
+            ):
                 ghost.respawn()
                 if self.player.powered_up:
                     ghost.mode = "frightened"
