@@ -134,10 +134,11 @@ class Game:
 
         return pacgums
 
-    def create_superpac(self,
+    def create_superpac(
+        self,
         pos: list[tuple[int, int]],
         cell_size: int
-        ) -> list[SuperPacgum]:
+    ) -> list[SuperPacgum]:
 
         """Create power pellets at the supplied corner positions.
 
