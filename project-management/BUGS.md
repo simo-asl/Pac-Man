@@ -1,6 +1,7 @@
 # Bug tracker
 
-These defects were reproduced on 25 October 2026. B01 remains open.
+These defects were reproduced on 25 October 2026. B01 has a targeted
+code fix in the showcase update; runtime regression testing is still needed.
 B02 and B03 were fixed in a later timing change and have regression checks.
 
 ## B01 — Power pellet and ghost contact in the same update
@@ -14,6 +15,9 @@ B02 and B03 were fixed in a later timing change and have regression checks.
   subsequent ghost collision in that pass.
 - **Cause:** the ghost-mode update happens before pellet collection, and the
   collision code relies on the ghost's previous mode.
+- **Code fix:** after processing pellets, refresh ghost frightened modes when
+  the player is powered up, before resolving ghost contacts.
+- **Verification:** targeted regression scenario still needs a runtime check.
 
 ## B02 — Ghost respawn time continues during manual pause (fixed)
 

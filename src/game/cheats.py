@@ -49,4 +49,19 @@ class Cheats:
         elif key == pygame.K_l:
             self.player.add_life()
 
+        elif key == pygame.K_b:
+            # Refresh the normal power-pellet effect.
+            self.player.activate_power()
+
+        elif key == pygame.K_t:
+            # Move the deadline forward without disrupting pause accounting.
+            self.game.level_start_time += 30_000
+
+        elif key == pygame.K_m:
+            self.game.add_score(1_000)
+
+        elif key == pygame.K_r:
+            # Return actors to their starting positions without losing a life.
+            self.game.reset_positions(self.player, self.ghosts)
+
         return False

@@ -249,6 +249,12 @@ class GameController:
                         self.pause_instructions = False
                         self.game.toggle_pause(self.player, self.ghosts)
                         self.change_state(GameState.PAUSED)
+                elif event.key == pygame.K_h and not self.game.paused:
+                    # Reuse the existing paused instructions panel as a cheat guide.
+                    self.pause_selected = 0
+                    self.pause_instructions = True
+                    self.game.toggle_pause(self.player, self.ghosts)
+                    self.change_state(GameState.PAUSED)
                 elif self.cheats.handle_key(event.key):
                     self.next_level()
 

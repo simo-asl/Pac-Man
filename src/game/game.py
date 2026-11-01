@@ -205,6 +205,11 @@ class Game:
         for superpac in superpacgums:
             self.collision(player, superpac)
 
+        # A power pellet collected this frame must protect the player
+        # before any ghost contact is resolved.
+        if player.powered_up:
+            ghosts.frighten_all()
+
         for ghost in ghosts.ghosts:
             if not ghosts.is_collesion(ghost):
                 continue

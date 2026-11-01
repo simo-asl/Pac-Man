@@ -60,6 +60,16 @@ this size was retained by request. Actor sprites scale to the maze cells.
 | F | Toggle ghost freeze |
 | L | Add a life |
 | S | Skip to the next level; the last skip reaches victory |
+| H | Open the cheat guide while pausing gameplay |
+| B | Refresh the power-pellet effect |
+| T | Add 30 seconds to the current level timer |
+| M | Add 1,000 points to the score |
+| R | Reset player and ghost positions without losing a life |
+
+The optional showcase cheats work only during active gameplay. `H` opens
+paused instructions so the timer and ghosts do not continue while reading.
+`B` uses the normal timed power effect; `R` clears that power when resetting
+positions. Cheat bonuses intentionally affect the final leaderboard score.
 
 Pause offers **Resume**, **Instructions**, and **Main Menu**. Instructions keep
 the game paused; Enter or Escape returns to the pause choices. Losing a life

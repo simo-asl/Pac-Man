@@ -7,5 +7,7 @@ INSTRUCTIONS = (
     'Power pellets let you eat blue ghosts.',
     'Avoid ghosts; watch your lives and timer.',
     'Clear every level to win.',
-    'CHEATS: I invincible / F freeze / L life / S skip',
+    'CHEATS: H help / I invincible / F freeze / L life',
+    'S skip / B power / T +30 seconds / M +1000 score',
+    'R reset positions (without losing a life)',
 )
