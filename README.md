@@ -24,6 +24,15 @@ The graphics backend is Pygame. Drawing stays in `Draw`, using images, bitmap
 letters and pixel operations. This project does not run MiniLibX itself; the
 comparison with Paris MiniLibX and Codam MLX42 is in [MLX.md](MLX.md).
 
+## 📖 Instructions preview
+
+<p align="center">
+  <img src="src/assets/backgrounds/instructions.png" alt="Instructions artwork used by our game" width="720">
+</p>
+
+The instructions screen is part of the actual game menu. We kept its
+artwork here as a preview; the controls below are the up-to-date reference.
+
 ## ✨ What we built
 
 - **Procedural mazes:** each level uses the provided MazeGenerator, with configurable dimensions and seeds.

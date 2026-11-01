@@ -1,6 +1,0 @@
-{
-  "version": "0.2.0",
-  "configurations": [
-    {"args":[],"name":"Python: current file","program":"${file}","type":"python","cwd":"${workspaceFolder}","request":"launch","console":"integratedTerminal"}
-  ]
-}

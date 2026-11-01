@@ -36,3 +36,16 @@ Required resources were selected from both literal and formatted asset paths.
 Menu loading, all actor directions, wall masks and the ten-level skip flow were
 checked after the moves. Public launch commands and gameplay behavior remain
 the same; the open bugs are recorded separately rather than repaired here.
+
+## Final repository housekeeping
+
+- Removed the tracked `nvim.log` editor log and the optional
+  `.vscode/launch.json` editor-specific launch configuration.
+- Removed `tests/test_ghost_movement.py` and its now-empty `tests/`
+  directory from the showcase repository at the team's request.
+- Kept all five `src/assets/backgrounds/` images: the menu view loads
+  every one of them at runtime, even though most are not shown in the README.
+- Kept ghost/player sprites, wall tiles, fonts, the MazeGenerator wheel,
+  configuration, source, and lockfile because the running game uses them.
+
+Removing tracked tests does not establish that the game is bug-free.
