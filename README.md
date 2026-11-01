@@ -1,8 +1,23 @@
 *This project has been created as part of the 42 curriculum by tlaghzal, mel-asla.*
 
-# Pac-Man
+# 🟡 PAC-MAN
 
-## Description
+<p align="center">
+  <img src="src/assets/backgrounds/main_menu.png" alt="Pac-Man main menu" width="780">
+</p>
+
+<p align="center">
+  <strong>Four ghosts. Four personalities. One maze at a time.</strong><br>
+  A 42 Common Core project by <strong>mel-asla</strong> and <strong>tlaghzal</strong>.
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white" alt="Python 3.12+">
+  <img src="https://img.shields.io/badge/Engine-Pygame-F7C948" alt="Pygame">
+  <img src="https://img.shields.io/badge/Levels-10%2B-yellow" alt="10+ levels">
+</p>
+
+## 🎮 Description
 
 A Python recreation of Pac-Man using the assigned MazeGenerator package.
 Collect pellets, avoid ghosts, use power pellets, and complete at least ten
@@ -13,7 +28,48 @@ The graphics backend is Pygame. Drawing stays in `Draw`, using images, bitmap
 letters and pixel operations. This project does not run MiniLibX itself; the
 comparison with Paris MiniLibX and Codam MLX42 is in [MLX.md](MLX.md).
 
-## Instructions
+## 🖼️ Game gallery
+
+<p align="center">
+  <img src="src/assets/backgrounds/instructions.png" alt="Instructions screen" width="48%">
+  <img src="src/assets/backgrounds/highscores.png" alt="Highscores screen" width="48%">
+</p>
+<p align="center">
+  <img src="src/assets/backgrounds/victory_image.png" alt="Victory screen" width="70%">
+</p>
+
+These are real artwork assets from our project; the maze and gameplay are rendered dynamically.
+
+## 👻 Ghost AI — four different personalities
+
+We wanted our ghosts to feel different instead of all following the same BFS route. We kept the original Pac-Man personalities as inspiration and adapted them to our generated mazes.
+
+| Ghost | Personality | Chase behavior |
+| --- | --- | --- |
+| <img src="src/assets/ghosts/blinky_right.png" alt="Blinky" width="32"> **Blinky** | Direct hunter | Targets Pac-Man's current tile. |
+| <img src="src/assets/ghosts/pinky_right.png" alt="Pinky" width="32"> **Pinky** | Ambusher | Targets four tiles ahead of Pac-Man. |
+| <img src="src/assets/ghosts/inky_right.png" alt="Inky" width="32"> **Inky** | Flanker | Uses Blinky's position and a point two tiles ahead of Pac-Man to calculate a reflected target. |
+| <img src="src/assets/ghosts/clyde_right.png" alt="Clyde" width="32"> **Clyde** | Chase and retreat | Chases from a distance, then targets his corner when he gets close. |
+
+In chase mode, each ghost chooses a legal neighboring tile closest to its own target. We avoid reversing unless necessary and break ties consistently. Frightened ghosts take random legal turns, while eaten ghosts use **BFS** to return to their spawn.
+
+This is arcade-inspired behavior, not a frame-perfect recreation of the original Pac-Man AI.
+
+```mermaid
+flowchart LR
+    P["Pac-Man position and direction"] --> B["Blinky: direct chase"]
+    P --> K["Pinky: 4 tiles ahead"]
+    P --> I["Inky: reflected target"]
+    B --> I
+    P --> C["Clyde: chase or retreat"]
+    B --> D["Maze movement"]
+    K --> D
+    I --> D
+    C --> D
+    D --> N["Next legal tile"]
+```
+
+## 🚀 Getting started
 
 Requirements: Python 3.12 or later, [uv](https://docs.astral.sh/uv/), and a desktop
 session for the game window. Run these commands from the repository root:
@@ -77,7 +133,7 @@ shows a short message before respawn. Game over and victory show the final
 score, then allow name entry. Saving returns to the main menu. A save failure
 keeps the form open so the player can correct the destination and retry.
 
-## Configuration
+## ⚙️ Configuration
 
 The filename must end in `.json`. Hjson reads standard JSON plus `#`, `//` and
 `/* ... */` comments outside quoted strings. Pydantic validates the settings.
@@ -135,7 +191,7 @@ ignored; the documented defaults therefore apply. Replace its contents with
 the example when configuring the game. Relative highscore paths are resolved
 from the working directory.
 
-## Highscore
+## 🏆 Highscores
 
 `High` stores a JSON object containing a `scores` array. Each entry has a `name`
 and a nonnegative integer `score`. Names accept one to ten ASCII letters,
@@ -150,7 +206,7 @@ JSON keeps this small local leaderboard easy to inspect and edit, without a
 database service. Writes are ordinary file writes, not transactional; possible
 interruption is recorded in the [risk register](project-management/RISKS.md).
 
-## Maze Generation
+## 🧩 Maze generation
 
 The assigned `mazegenerator-2.1.0-py3-none-any.whl` remains at the repository
 root and is referenced by `pyproject.toml`. The package is used unchanged.
@@ -167,7 +223,7 @@ the generator. A generation failure returns to the menu with an error message.
 The game's ghost pathfinding navigates the supplied maze; it does not generate
 or replace it.
 
-## Implementation
+## 🛠️ Implementation
 
 The main loop collects events, dispatches the active screen, presents the frame,
 and caps rendering at 60 FPS. Gameplay uses sixty fixed updates per second,
@@ -178,15 +234,7 @@ levels. Timeout ends the game. Normal completion and `S` use the same progressio
 path.
 
 `Game` handles score, pellet/ghost collisions, level timing and death pauses.
-`GhostsManager` gives each ghost an arcade-inspired chase target: Blinky
-pursues the player, Pinky aims four cells ahead, Inky uses a reflected target
-relative to Blinky, and Clyde alternates between pursuit and its home corner
-according to distance. During chase, ghosts choose a legal neighboring tile
-closest to their target, avoid reversing unless necessary, and break ties
-in up/left/down/right order. Frightened ghosts choose random legal directions;
-eaten ghosts retain BFS navigation toward their spawn. These are adaptations
-to the generated maze, not a frame-exact recreation of arcade mode schedules. Remaining gameplay defects are recorded
-in [the bug list](project-management/BUGS.md), not hidden by the test results.
+We gave each ghost its own targeting strategy, as explained in the Ghost AI section above. We keep track of remaining gameplay defects in [our bug list](project-management/BUGS.md).
 
 Pausing also stops eaten-ghost respawn, player power and the level timer.
 Unexpected screen errors report their context and return to the menu; startup
@@ -200,7 +248,7 @@ is reduced to a smaller integer scale, then shortened if necessary. Tamzen
 Bold is a pre-drawn BDF font loaded by `bdfparser`; there is no TrueType or
 Pygame font rasterization.
 
-## General Software Architecture
+## 🏗️ Architecture
 
 | Module | Responsibility |
 | --- | --- |
@@ -228,7 +276,7 @@ walls and fonts. The bitmap-font license is bundled. See the
 [cleanup inventory](project-management/CLEANUP.md) for the 48 retained files and
 removed duplicate resources.
 
-## Project Management
+## 📋 Project management
 
 The [project-management directory](project-management/README.md) contains the
 commit-based timeline, observed contributions, technical decisions, risks,
@@ -242,7 +290,7 @@ packaging script/spec, standalone distribution test and free unlisted/private
 platform release remain pending. Detailed scope and results are in
 [ACCEPTANCE.md](project-management/ACCEPTANCE.md).
 
-## Resources
+## 📚 Resources
 
 - [Project subject](en.subject.pdf)
 - [Pygame documentation](https://www.pygame.org/docs/)
@@ -253,5 +301,5 @@ platform release remain pending. Detailed scope and results are in
 - [42 Paris MiniLibX API](https://github.com/42Paris/minilibx-linux/blob/master/mlx.h)
 - [Codam MLX42 API](https://github.com/codam-coding-college/MLX42/blob/master/include/MLX42/MLX42.h)
 
-AI was used for theory and explanations about game loops, state machines,
-configuration validation and bitmap graphics.
+During development, we used AI as a learning resource for game loops, state machines,
+configuration validation, and bitmap graphics.
