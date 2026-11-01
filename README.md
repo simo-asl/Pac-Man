@@ -18,7 +18,7 @@
 A Python recreation of Pac-Man using the assigned MazeGenerator package.
 Collect pellets, avoid ghosts, use power pellets, and complete at least ten
 levels before the timer runs out. The game includes persistent top-ten
-highscores, pause instructions, and cheats for evaluation.
+highscores, pause instructions, and optional gameplay cheats.
 
 The graphics backend is Pygame. Drawing stays in `Draw`, using images, bitmap
 letters and pixel operations. This project does not run MiniLibX itself; the
@@ -41,9 +41,6 @@ artwork here as a preview; the controls below are the up-to-date reference.
 - **Level progression:** keep your score and remaining lives as you work through ten or more levels.
 - **Local leaderboard:** save your best runs to a JSON-backed top-ten highscore table.
 - **Extra controls:** pause, view instructions, and experiment with optional cheats.
-
-We kept the README focused on the actual game systems instead of presenting
-concept artwork or unused background mockups as gameplay screenshots.
 
 ## 👻 Ghost AI — four different personalities
 
@@ -208,8 +205,7 @@ written to `highscore_filename`. Missing, empty, unreadable or invalid files
 produce an empty leaderboard; file errors are reported without a traceback.
 
 JSON keeps this small local leaderboard easy to inspect and edit, without a
-database service. Writes are ordinary file writes, not transactional; possible
-interruption is recorded in the [risk register](project-management/RISKS.md).
+database service. Scores are saved locally, so the leaderboard works without a server or account.
 
 ## 🧩 Maze generation
 
@@ -239,7 +235,7 @@ levels. Timeout ends the game. Normal completion and `S` use the same progressio
 path.
 
 `Game` handles score, pellet/ghost collisions, level timing and death pauses.
-We gave each ghost its own targeting strategy, as explained in the Ghost AI section above. We keep track of remaining gameplay defects in [our bug list](project-management/BUGS.md).
+We gave each ghost its own targeting strategy, as explained in the Ghost AI section above.
 
 Pausing also stops eaten-ghost respawn, player power and the level timer.
 Unexpected screen errors report their context and return to the menu; startup
@@ -276,24 +272,34 @@ The state machine selects `Menu` or `GameController`; they ask their views and
 `Draw` to display content. Gameplay classes own their state, and `High` owns
 leaderboard persistence.
 
-Assets are organized once under `src/assets/`: backgrounds, ghosts, player,
-walls and fonts. The bitmap-font license is bundled. See the
-[cleanup inventory](project-management/CLEANUP.md) for the 48 retained files and
-removed duplicate resources.
+Assets are organized under `src/assets/`: backgrounds, ghosts, player,
+walls and fonts. The bitmap-font license is bundled alongside the font.
 
-## 📋 Project management
+## 🔄 How a game frame works
 
-The [project-management directory](project-management/README.md) contains the
-commit-based timeline, observed contributions, technical decisions, risks,
-acceptance procedures, open bugs and cleanup record. The timeline covers work
-visible from 4 to 25 October 2026. It is a retrospective record, not a claim
-that the team had an earlier formal schedule or meeting log.
+We keep rendering and gameplay logic separate. The game runs at a fixed
+**60 updates per second**, while the screen is drawn through our Pygame
+rendering layer.
 
-`make lint`, parser edge cases, menu/save flows, selected ghost behavior and
-all ten level skips have been checked. A complete manual playthrough, root
-packaging script/spec, standalone distribution test and free unlisted/private
-platform release remain pending. Detailed scope and results are in
-[ACCEPTANCE.md](project-management/ACCEPTANCE.md).
+```mermaid
+flowchart TD
+    A["Keyboard input"] --> B["GameController"]
+    B --> C["Player movement"]
+    C --> D["Ghost targeting and movement"]
+    D --> E["Pellets, power-ups and collisions"]
+    E --> F{"Level complete or game over?"}
+    F -->|No| G["Draw maze, actors and HUD"]
+    F -->|Yes| H["Next level or results screen"]
+    G --> A
+```
+
+### Why we structured it this way
+
+- **Movement and collisions** stay in the gameplay classes.
+- **Menus and HUD** are handled by dedicated UI components.
+- **Maze generation** is isolated from ghost navigation.
+- **Ghost personalities** share movement rules but choose different targets.
+- **Configuration and highscores** are managed independently of rendering.
 
 ## 📚 Resources
 
