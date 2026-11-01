@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <img src="src/assets/backgrounds/main_menu.png" alt="Pac-Man main menu artwork" width="820">
+  <img src="src/assets/backgrounds/image1.png" alt="Pac-Man main menu artwork" width="820">
 </p>
 
 <p align="center">
