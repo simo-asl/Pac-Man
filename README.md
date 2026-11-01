@@ -3,10 +3,6 @@
 # 🟡 PAC-MAN
 
 <p align="center">
-  <img src="src/assets/backgrounds/main_menu.png" alt="Pac-Man main menu" width="780">
-</p>
-
-<p align="center">
   <strong>Four ghosts. Four personalities. One maze at a time.</strong><br>
   A 42 Common Core project by <strong>mel-asla</strong> and <strong>tlaghzal</strong>.
 </p>
@@ -28,17 +24,17 @@ The graphics backend is Pygame. Drawing stays in `Draw`, using images, bitmap
 letters and pixel operations. This project does not run MiniLibX itself; the
 comparison with Paris MiniLibX and Codam MLX42 is in [MLX.md](MLX.md).
 
-## 🖼️ Game gallery
+## ✨ What we built
 
-<p align="center">
-  <img src="src/assets/backgrounds/instructions.png" alt="Instructions screen" width="48%">
-  <img src="src/assets/backgrounds/highscores.png" alt="Highscores screen" width="48%">
-</p>
-<p align="center">
-  <img src="src/assets/backgrounds/victory_image.png" alt="Victory screen" width="70%">
-</p>
+- **Procedural mazes:** each level uses the provided MazeGenerator, with configurable dimensions and seeds.
+- **Arcade-style movement:** navigate corridors, collect pellets, and use power pellets to turn the tables on ghosts.
+- **Four ghost personalities:** each ghost has its own chase target and makes decisions at maze intersections.
+- **Level progression:** keep your score and remaining lives as you work through ten or more levels.
+- **Local leaderboard:** save your best runs to a JSON-backed top-ten highscore table.
+- **Extra controls:** pause, view instructions, and experiment with optional cheats.
 
-These are real artwork assets from our project; the maze and gameplay are rendered dynamically.
+We kept the README focused on the actual game systems instead of presenting
+concept artwork or unused background mockups as gameplay screenshots.
 
 ## 👻 Ghost AI — four different personalities
 
