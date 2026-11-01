@@ -98,7 +98,7 @@ class MenuView:
     def draw_menu(
         self, options: list[str], selected_index: int, error_message: str
     ) -> None:
-        """Show all four required main-menu actions.
+        """Show the available main-menu actions.
 
         Args:
             options: Labels of the available main-menu actions.
@@ -111,18 +111,22 @@ class MenuView:
         self._draw_page(
             GameState.MENU, 'PAC-MAN', 'UP / DOWN SELECT   ENTER CONFIRM'
         )
+        row_start = .29
+        row_step = min(.1, .42 / max(1, len(options) - 1))
         for index, option in enumerate(options):
             label = option
             color = TEXT
             if index == selected_index:
                 label = '> ' + option
                 color = GOLD
-            row_position = .34 + index * .1
+            row_position = row_start + index * row_step
             self._draw_line(label, row_position, color)
         if error_message:
             self._draw_line(error_message, .76, ERROR)
 
-    def draw_highscore(self, scores: list[score]) -> None:
+    def draw_highscore(
+        self, scores: list[score], title: str = 'HIGH SCORES'
+    ) -> None:
         """Fit all ten entries, with separate columns for names and scores.
 
         Args:
@@ -132,7 +136,7 @@ class MenuView:
             None.
         """
         self._draw_page(
-            GameState.HIGHSCORES, 'HIGH SCORES', 'ENTER / ESC BACK',
+            GameState.HIGHSCORES, title, 'ENTER / ESC BACK',
         )
         if not scores:
             self._draw_line('No scores yet. Start your first game!', .46)

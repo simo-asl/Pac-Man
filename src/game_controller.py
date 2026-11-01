@@ -70,7 +70,7 @@ class GameController:
         """
         self.machine = machine
 
-    def start_game(self) -> None:
+    def start_game(self, arcade_survival: bool = False) -> None:
         """Reset score, lives and progression for a new game.
 
         Returns:
@@ -78,8 +78,12 @@ class GameController:
         """
         self.level = 0
         self.started = True
+        self.arcade_survival = arcade_survival
 
-        self.game = Game(config=self.config)
+        self.game = Game(
+            config=self.config,
+            arcade_survival=arcade_survival,
+        )
 
         self.remaining_lives = self.config.lives
 
@@ -167,6 +171,8 @@ class GameController:
                 kind,
             )
 
+        self.ghost_base_speeds = [ghost.speed for ghost in self.ghosts.ghosts]
+
         self.cheats = Cheats(
             self.player,
             self.game,
@@ -181,12 +187,56 @@ class GameController:
         Returns:
             None.
         """
+        if self.arcade_survival:
+            return
+
         self.remaining_lives = self.player.lives
 
         self.game.next_level()
         self.level += 1
 
         self._setup_safely()
+
+    def _start_next_wave(self) -> None:
+        """Refill accessible pellets while keeping the current survival run.
+
+        Returns:
+            None.
+        """
+        positions = self.maze.get_walkable_positions()
+        super_positions = []
+        for corner in (
+            (self.maze.columns - 1, 0),
+            (0, 0),
+            (self.maze.columns - 1, self.maze.rows - 1),
+            (0, self.maze.rows - 1),
+        ):
+            position = self.maze.grid_to_pixel(*corner)
+            if position in positions:
+                positions.remove(position)
+                super_positions.append(position)
+        if self.player.respawn in positions:
+            positions.remove(self.player.respawn)
+
+        self.pacgums = self.game.create_pacgums(
+            positions, self.maze.CELL_SIZE,
+        )
+        self.superpacgums = self.game.create_superpac(
+            super_positions, self.maze.CELL_SIZE,
+        )
+        self.game.wave += 1
+
+    def _update_survival_difficulty(self) -> None:
+        """Raise integer ghost speeds gradually without overshooting cells.
+
+        Returns:
+            None.
+        """
+        speed_increase = min(2, self.game.survival_time() // 30)
+        for ghost, base_speed in zip(
+            self.ghosts.ghosts, self.ghost_base_speeds,
+        ):
+            ghost.speed = base_speed + speed_increase
 
     def _setup_safely(self) -> None:
         """Return to the menu with feedback if level creation fails.
@@ -247,15 +297,18 @@ class GameController:
                     if not self.game.paused:
                         self.pause_selected = 0
                         self.pause_instructions = False
-                        self.game.toggle_pause(self.player, self.ghosts)
+                        self.game.toggle_pause(
+                            self.player, self.ghosts,
+                        )
                         self.change_state(GameState.PAUSED)
                 elif event.key == pygame.K_h and not self.game.paused:
-                    # Reuse the existing paused instructions panel as a cheat guide.
+                    # Reuse the paused instructions panel as a cheat guide.
                     self.pause_selected = 0
                     self.pause_instructions = True
                     self.game.toggle_pause(self.player, self.ghosts)
                     self.change_state(GameState.PAUSED)
-                elif self.cheats.handle_key(event.key):
+                elif (self.cheats.handle_key(event.key)
+                      and not self.arcade_survival):
                     self.next_level()
 
             case GameState.PAUSED:
@@ -344,12 +397,15 @@ class GameController:
         """
         self.game.update_death(self.player, self.ghosts)
 
-        if (not self.game.manual_pause
+        if (not self.arcade_survival
+                and not self.game.manual_pause
                 and self.game.level_time_remaining() == 0):
             self.player.dead()
 
         if (not self.game.paused and not self.game.manual_pause
                 and self.player.alive):
+            if self.arcade_survival:
+                self._update_survival_difficulty()
             self.player.move(self.maze)
             self.player.update_power()
 
@@ -369,12 +425,17 @@ class GameController:
 
             self.ghosts.update_all()
 
-            if self.player.alive and self.game.level_complete(
-                self.pacgums,
-                self.superpacgums,
-            ):
-                self.change_state(GameState.LEVEL_COMPLETE)
-                return
+            has_pellets = self.pacgums or self.superpacgums
+            if (self.player.alive
+                    and (not self.arcade_survival or has_pellets)
+                    and self.game.level_complete(
+                        self.pacgums, self.superpacgums,
+                    )):
+                if self.arcade_survival:
+                    self._start_next_wave()
+                else:
+                    self.change_state(GameState.LEVEL_COMPLETE)
+                    return
 
         if not self.player.alive:
             self.change_state(GameState.GAME_OVER)
@@ -429,12 +490,20 @@ class GameController:
             None.
         """
         self.draw_playing()
-        reason = ('TIME RAN OUT' if self.game.level_time_remaining() == 0
-                  else 'NO LIVES LEFT')
-        self.game_ui.draw_panel('GAME OVER - YOU LOST', (
-            reason, f'FINAL SCORE: {self.game.score}',
-            'ENTER SAVE YOUR SCORE',
-        ))
+        if self.arcade_survival:
+            survived = self.game.survival_time()
+            self.game_ui.draw_panel('GAME OVER - SURVIVAL', (
+                'NO LIVES LEFT', f'FINAL SCORE: {self.game.score}',
+                f'TIME SURVIVED: {survived // 60:02}:{survived % 60:02}',
+                f'FINAL WAVE: {self.game.wave}', 'ENTER SAVE YOUR SCORE',
+            ))
+        else:
+            reason = ('TIME RAN OUT' if self.game.level_time_remaining() == 0
+                      else 'NO LIVES LEFT')
+            self.game_ui.draw_panel('GAME OVER - YOU LOST', (
+                reason, f'FINAL SCORE: {self.game.score}',
+                'ENTER SAVE YOUR SCORE',
+            ))
 
     def draw_level_complete(self) -> None:
         """Show the current score before advancing to the next level.

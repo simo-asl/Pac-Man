@@ -1,8 +1,12 @@
 """Control player movement, lives and temporary power."""
 
 from typing import TYPE_CHECKING
+from math import cos, radians, sin
+from time import monotonic
 
 import pygame
+
+from .clock import now_ms
 
 if TYPE_CHECKING:
     from ..maze import Maze
@@ -12,6 +16,10 @@ if TYPE_CHECKING:
 class Player:
     """Track player movement, lives, power and invincibility.
     """
+    MOUTH_FRAME_MS = 70
+    MOUTH_ANGLES = (100, 64, 42, 64, 100)
+    REST_FRAME = 2
+
     def __init__(
         self,
         x: int,
@@ -47,7 +55,9 @@ class Player:
         self.invincible: bool = False
         self.respawn = (x, y)
         self.direction: int = 2
-        self.images: dict[int, pygame.Surface] = {}
+        self.images: dict[int, list[pygame.Surface]] = {}
+        self.mouth_frame = self.REST_FRAME
+        self.last_mouth_frame = monotonic()
 
     def dead(self) -> None:
         """Mark the player as dead to trigger the game-over flow.
@@ -84,7 +94,7 @@ class Player:
             None.
         """
         self.powered_up = True
-        self.power_start_time = pygame.time.get_ticks()
+        self.power_start_time = now_ms()
 
     def toggle_invincibility(self) -> None:
         """Toggle protection from lethal ghost collisions.
@@ -101,7 +111,7 @@ class Player:
             None.
         """
         if self.powered_up:
-            if (pygame.time.get_ticks() - self.power_start_time
+            if (now_ms() - self.power_start_time
                     >= self.power_duration):
                 self.powered_up = False
 
@@ -115,6 +125,7 @@ class Player:
         Returns:
             None.
         """
+        previous_position = self.x, self.y
         keys = pygame.key.get_pressed()
 
         if self.x == self.target_x and self.y == self.target_y:
@@ -145,6 +156,51 @@ class Player:
         elif self.y > self.target_y:
             self.y -= min(self.speed, self.y - self.target_y)
 
+        self._update_mouth_animation((self.x, self.y) != previous_position)
+
+    def _mouth_image(
+        self, size: tuple[int, int], direction: int, mouth_angle: int,
+    ) -> pygame.Surface:
+        """Create one bright Pac-Man frame with a transparent mouth wedge."""
+        image = pygame.Surface(size, pygame.SRCALPHA)
+        center = size[0] // 2, size[1] // 2
+        radius = min(size) // 2 - 1
+        pygame.draw.circle(image, (247, 185, 54), center, radius)
+        pygame.draw.circle(image, (255, 224, 85), center, max(1, radius - 1))
+        facing_angle = {1: -90, 2: 0, 4: 90, 8: 180}[direction]
+        half_angle = mouth_angle / 2
+        mouth_reach = radius * 2
+        points = [center]
+        for angle in (facing_angle - half_angle, facing_angle + half_angle):
+            radians_angle = radians(angle)
+            points.append((
+                round(center[0] + cos(radians_angle) * mouth_reach),
+                round(center[1] + sin(radians_angle) * mouth_reach),
+            ))
+        pygame.draw.polygon(image, (0, 0, 0, 0), points)
+        return image
+
+    def _update_mouth_animation(self, moved: bool) -> None:
+        """Advance the mouth from actual movement, rather than drawing.
+
+        Drawing can happen at a different cadence from fixed gameplay updates.
+        Advancing here keeps the animation running whenever Pac-Man's pixel
+        position changes and leaves rendering as a side-effect-free operation.
+        """
+        now = monotonic()
+        if not moved:
+            self.mouth_frame = self.REST_FRAME
+            self.last_mouth_frame = now
+            return
+        elapsed = now - self.last_mouth_frame
+        frame_duration = self.MOUTH_FRAME_MS / 1000
+        if elapsed >= frame_duration:
+            steps = int(elapsed // frame_duration)
+            self.mouth_frame = (
+                self.mouth_frame + steps
+            ) % len(self.MOUTH_ANGLES)
+            self.last_mouth_frame += steps * frame_duration
+
     def draw(self, draw: "Draw") -> None:
         """Draw this actor or its uneaten pellet through the drawing helper.
 
@@ -156,15 +212,16 @@ class Player:
         """
         if not self.images:
             self.images = {
-                direction: draw.load_image(
-                    f"assets/player/pacman_{name}_open.png",
-                    (self.radius * 2, self.radius * 2),
-                )
-                for direction, name in (
-                    (1, "up"), (2, "right"), (4, "down"), (8, "left"),
-                )
+                direction: [
+                    self._mouth_image(
+                        (self.radius * 2, self.radius * 2), direction,
+                        mouth_angle,
+                    )
+                    for mouth_angle in self.MOUTH_ANGLES
+                ]
+                for direction in (1, 2, 4, 8)
             }
-        image = self.images[self.direction]
+        image = self.images[self.direction][self.mouth_frame]
         draw.draw_image(
             image, self.x - image.get_width() // 2,
             self.y - image.get_height() // 2,

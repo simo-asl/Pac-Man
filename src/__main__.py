@@ -4,7 +4,6 @@ import sys
 import time
 
 import pygame
-
 from .game_controller import GameController
 from .parsing import Parser
 from .ui import Draw, Menu
@@ -25,7 +24,7 @@ def main() -> int:
         return 1
 
     try:
-        pygame.init()
+        pygame.display.init()
         config = Parser(sys.argv[1]).parse()
 
         screen = pygame.display.set_mode(WINDOW_SIZE)

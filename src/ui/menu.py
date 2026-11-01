@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pygame
@@ -28,13 +29,18 @@ class Menu:
             None.
         """
         self.view = MenuView(drawer)
-        self.options = ['START GAME', 'HIGHSCORES', 'INSTRUCTIONS', 'EXIT']
+        self.options = [
+            'CLASSIC MODE', 'ARCADE SURVIVAL', 'HIGHSCORES',
+            'SURVIVAL SCORES', 'INSTRUCTIONS', 'EXIT',
+        ]
         self.selected_index = 0
         self.player_name = ''
         self.error_message = ''
         self.machine: StateMachine | None = None
         self.highscore_store = High('highscores.json')
+        self.survival_highscore_store = High('highscores_survival.json')
         self.high_scores: list[score] = []
+        self.showing_survival_scores = False
 
     def set_machine(self, state_machine: StateMachine) -> None:
         """Connect navigation and load scores from the configured file.
@@ -49,6 +55,12 @@ class Menu:
         self.highscore_store = High(
             state_machine.game.config.highscore_filename
         )
+        filename = Path(state_machine.game.config.highscore_filename)
+        suffix = filename.suffix or '.json'
+        survival_filename = filename.with_name(
+            f'{filename.stem}_survival{suffix}'
+        )
+        self.survival_highscore_store = High(str(survival_filename))
         self.high_scores = self.highscore_store.get_top_scores()
 
     def _handle_main_menu_key(self, key: int) -> None:
@@ -77,11 +89,19 @@ class Menu:
         if self.machine is None:
             return
         selected_action = self.options[self.selected_index]
-        if selected_action == 'START GAME':
+        if selected_action == 'CLASSIC MODE':
             self.error_message = ''
             self.machine.game.start_game()
+        elif selected_action == 'ARCADE SURVIVAL':
+            self.error_message = ''
+            self.machine.game.start_game(arcade_survival=True)
         elif selected_action == 'HIGHSCORES':
+            self.showing_survival_scores = False
             self.high_scores = self.highscore_store.get_top_scores()
+            self.machine.change_state(GameState.HIGHSCORES)
+        elif selected_action == 'SURVIVAL SCORES':
+            self.showing_survival_scores = True
+            self.high_scores = self.survival_highscore_store.get_top_scores()
             self.machine.change_state(GameState.HIGHSCORES)
         elif selected_action == 'INSTRUCTIONS':
             self.machine.change_state(GameState.INSTRUCTIONS)
@@ -123,10 +143,13 @@ class Menu:
             self.error_message = 'Enter 1-10 letters, numbers or spaces.'
             return
         final_score = self.machine.game.game.score
-        if not self.highscore_store.add_score(self.player_name, final_score):
+        store = (self.survival_highscore_store
+                 if self.machine.game.arcade_survival
+                 else self.highscore_store)
+        if not store.add_score(self.player_name, final_score):
             self.error_message = 'Cannot save score. Check the file and retry.'
             return
-        self.high_scores = self.highscore_store.get_top_scores()
+        self.high_scores = store.get_top_scores()
         self.error_message = ''
         self.machine.change_state(GameState.MENU)
 
@@ -177,7 +200,9 @@ class Menu:
                 self.options, self.selected_index, self.error_message,
             )
         elif state == GameState.HIGHSCORES:
-            self.view.draw_highscore(self.high_scores)
+            title = ('SURVIVAL SCORES' if self.showing_survival_scores
+                     else 'HIGH SCORES')
+            self.view.draw_highscore(self.high_scores, title)
         elif state == GameState.INSTRUCTIONS:
             self.view.draw_instructions()
         elif self.machine is not None:

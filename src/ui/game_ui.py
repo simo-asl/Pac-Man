@@ -66,13 +66,22 @@ class GameUi:
         Returns:
             None.
         """
-        remaining_seconds = max(0, int(self.game.level_time_remaining()))
-        hud_labels = (
-            f'LIVES: {self.player.lives}',
-            f'LEVEL: {self.maze.level + 1}/{len(self.game.config.levels)}',
-            f'SCORE: {self.game.score}',
-            f'TIME: {remaining_seconds // 60}:{remaining_seconds % 60:02}',
-        )
+        if self.game.arcade_survival:
+            survived = self.game.survival_time()
+            hud_labels = (
+                f'LIVES: {self.player.lives}',
+                f'SCORE: {self.game.score}',
+                f'TIME: {survived // 60:02}:{survived % 60:02}',
+                f'WAVE: {self.game.wave}',
+            )
+        else:
+            remaining_seconds = max(0, int(self.game.level_time_remaining()))
+            hud_labels = (
+                f'LIVES: {self.player.lives}',
+                f'LEVEL: {self.maze.level + 1}/{len(self.game.config.levels)}',
+                f'SCORE: {self.game.score}',
+                f'TIME: {remaining_seconds // 60}:{remaining_seconds % 60:02}',
+            )
         for index, text in enumerate(hud_labels):
             self.drawer.draw_text(
                 text, self.window_width * (2 * index + 1) // 8,

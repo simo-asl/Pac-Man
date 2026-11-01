@@ -3,7 +3,7 @@
 from .player import Player
 from .pacgum import Pacgum, SuperPacgum
 from .ghost_manger import GhostsManager
-import pygame
+from .clock import now_ms
 import random
 
 from ..parsing import GameConfig
@@ -15,6 +15,7 @@ class Game:
     def __init__(
         self,
         config: GameConfig | None = None,
+        arcade_survival: bool = False,
     ) -> None:
 
         """Initialize this object and its runtime dependencies.
@@ -27,13 +28,30 @@ class Game:
             None.
         """
         self.config = config if config is not None else GameConfig()
-        self.level_start_time = pygame.time.get_ticks()
+        self.arcade_survival = arcade_survival
+        self.wave = 1
+        self.level_start_time = now_ms()
+        self.survival_start_time = self.level_start_time
         self.total_pause_time = 0
         self.score: int = 0
         self.death_time = 0
         self.paused = False
         self.manual_pause = False
         self.manual_pause_start = 0
+
+    def survival_time(self) -> int:
+        """Return active survival seconds, excluding all paused time.
+
+        Returns:
+            Elapsed active gameplay time in whole seconds.
+        """
+        now = now_ms()
+        if self.manual_pause:
+            now = self.manual_pause_start
+        elif self.paused:
+            now = self.death_time
+        elapsed = now - self.survival_start_time - self.total_pause_time
+        return max(0, elapsed // 1000)
 
     def add_score(self, add: int) -> None:
 
@@ -74,7 +92,7 @@ class Game:
         Returns:
             None.
         """
-        self.level_start_time = pygame.time.get_ticks()
+        self.level_start_time = now_ms()
         self.total_pause_time = 0
         self.paused = False
         self.manual_pause = False
@@ -88,7 +106,7 @@ class Game:
         Returns:
             Nonnegative number of seconds left for the level.
         """
-        now = pygame.time.get_ticks()
+        now = now_ms()
 
         if self.manual_pause:
             now = self.manual_pause_start
@@ -232,7 +250,7 @@ class Game:
         if self.paused:
             return
         self.paused = True
-        self.death_time = pygame.time.get_ticks()
+        self.death_time = now_ms()
 
     def toggle_pause(
         self, player: Player, ghosts: GhostsManager
@@ -248,7 +266,7 @@ class Game:
         """
         if self.paused:
             return
-        now = pygame.time.get_ticks()
+        now = now_ms()
 
         if self.manual_pause:
             duration = now - self.manual_pause_start
@@ -277,7 +295,7 @@ class Game:
         if not self.paused:
             return
 
-        now = pygame.time.get_ticks()
+        now = now_ms()
 
         if now - self.death_time >= 1000:
 

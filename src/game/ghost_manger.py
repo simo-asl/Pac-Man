@@ -166,7 +166,6 @@ class GhostsManager:
             priority.get((pos[0] - ghost.x, pos[1] - ghost.y), 4),
         ))
 
-
     def is_collesion(self, ghost: Ghost) -> bool:
         """Check whether this ghost overlaps the player collision circle.
 
