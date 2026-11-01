@@ -178,11 +178,14 @@ levels. Timeout ends the game. Normal completion and `S` use the same progressio
 path.
 
 `Game` handles score, pellet/ghost collisions, level timing and death pauses.
-`GhostsManager` uses standard breadth-first search (BFS) to make every ghost
-follow a shortest open path to the player's current cell. Ghosts finish each
-cell before choosing their next step. Frightened ghosts move away from the
-player without reversing unless at a dead end; eaten ghosts use BFS to return
-to their spawn. Remaining gameplay defects are recorded
+`GhostsManager` gives each ghost an arcade-inspired chase target: Blinky
+pursues the player, Pinky aims four cells ahead, Inky uses a reflected target
+relative to Blinky, and Clyde alternates between pursuit and its home corner
+according to distance. During chase, ghosts choose a legal neighboring tile
+closest to their target, avoid reversing unless necessary, and break ties
+in up/left/down/right order. Frightened ghosts choose random legal directions;
+eaten ghosts retain BFS navigation toward their spawn. These are adaptations
+to the generated maze, not a frame-exact recreation of arcade mode schedules. Remaining gameplay defects are recorded
 in [the bug list](project-management/BUGS.md), not hidden by the test results.
 
 Pausing also stops eaten-ghost respawn, player power and the level timer.

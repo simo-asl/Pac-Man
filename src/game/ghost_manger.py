@@ -1,5 +1,6 @@
 """Coordinate ghost navigation and edible states."""
 
+import random
 import time
 from collections import deque
 
@@ -97,7 +98,7 @@ class GhostsManager:
         self,
         ghost: Ghost,
     ) -> tuple[int, int] | None:
-        """Choose a legal neighbor farthest from the player.
+        """Choose a random legal neighbor while frightened.
 
         Args:
             ghost: Ghost whose position, mode or destination is being
@@ -114,13 +115,57 @@ class GhostsManager:
         forward_moves = [move for move in moves if move != previous]
         if forward_moves:
             moves = forward_moves
-        player_pos = self.maze.pixel_to_grid(self.player.x, self.player.y)
-        return max(
-            moves,
-            key=lambda pos: (
-                (pos[0] - player_pos[0]) ** 2 + (pos[1] - player_pos[1]) ** 2
-            ),
-        )
+        return random.choice(moves)
+
+    def chase_target(self, ghost: Ghost) -> tuple[int, int]:
+        """Choose a personality-specific target inspired by arcade Pac-Man.
+
+        Blinky pursues the player, Pinky ambushes four cells ahead,
+        Inky reflects Blinky around a point two cells ahead, and
+        Clyde retreats toward his corner when within eight tiles.
+        """
+        player_tile = self.maze.pixel_to_grid(self.player.x, self.player.y)
+        px, py = player_tile
+        dx, dy = DIRECTIONS.get(self.player.direction, (1, 0))
+        if ghost.kind == "pinky":
+            return px + 4 * dx, py + 4 * dy
+        if ghost.kind == "inky":
+            ahead_x, ahead_y = px + 2 * dx, py + 2 * dy
+            blinky = next(
+                (other for other in self.ghosts if other.kind == "blinky"),
+                None,
+            )
+            if blinky is None:
+                return player_tile
+            return 2 * ahead_x - blinky.x, 2 * ahead_y - blinky.y
+        if ghost.kind == "clyde":
+            distance_sq = (ghost.x - px) ** 2 + (ghost.y - py) ** 2
+            return ghost.corner if distance_sq < 64 else player_tile
+        return player_tile
+
+    def choose_target_tile(
+        self, ghost: Ghost, target: tuple[int, int]
+    ) -> tuple[int, int] | None:
+        """Choose a legal neighbor closest to the target, without reversing.
+
+        Arcade ghosts make local intersection decisions rather than finding
+        a globally shortest BFS route. Up/left/down/right breaks ties.
+        """
+        moves = self.maze.get_available_moves(ghost.x, ghost.y)
+        if not moves:
+            return None
+        dx, dy = DIRECTIONS.get(ghost.direction, (0, 0))
+        previous = (ghost.x - dx, ghost.y - dy)
+        forward = [move for move in moves if move != previous]
+        if forward:
+            moves = forward
+        tx, ty = target
+        priority = {(0, -1): 0, (-1, 0): 1, (0, 1): 2, (1, 0): 3}
+        return min(moves, key=lambda pos: (
+            (pos[0] - tx) ** 2 + (pos[1] - ty) ** 2,
+            priority.get((pos[0] - ghost.x, pos[1] - ghost.y), 4),
+        ))
+
 
     def is_collesion(self, ghost: Ghost) -> bool:
         """Check whether this ghost overlaps the player collision circle.
@@ -153,8 +198,7 @@ class GhostsManager:
         """
         best_pos = None
         if ghost.mode == "chase":
-            player_pos = self.maze.pixel_to_grid(self.player.x, self.player.y)
-            best_pos = self.choose_next_tile(ghost, player_pos)
+            best_pos = self.choose_target_tile(ghost, self.chase_target(ghost))
         elif ghost.mode == "frightened":
             best_pos = self.choose_frightened_tile(ghost)
         elif ghost.mode == "eaten":
