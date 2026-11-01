@@ -3,7 +3,7 @@
 # 🟡 PAC-MAN
 
 <p align="center">
-  <strong>Four ghosts. Four personalities. One maze at a time.</strong><br>
+  <strong>Two ways to play. Four unique ghost personalities. Endless arcade ambition.</strong><br>
   A 42 Common Core project by <strong>mel-asla</strong> and <strong>tlaghzal</strong>.
 </p>
 
@@ -11,18 +11,49 @@
   <img src="https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white" alt="Python 3.12+">
   <img src="https://img.shields.io/badge/Engine-Pygame-F7C948" alt="Pygame">
   <img src="https://img.shields.io/badge/Levels-10%2B-yellow" alt="10+ levels">
+  <img src="https://img.shields.io/badge/Modes-Classic%20%7C%20Arcade%20Survival-ffb000" alt="Classic and Arcade Survival">
+  <img src="https://img.shields.io/badge/Gameplay-60%20FPS-34d399" alt="60 FPS">
+</p>
+
+<p align="center">
+  <img src="src/assets/backgrounds/main_menu.png" alt="Pac-Man main menu artwork" width="820">
+</p>
+
+<p align="center">
+  <a href="#-getting-started">Play the game</a> ·
+  <a href="#-game-modes">Explore game modes</a> ·
+  <a href="#-ghost-ai--four-different-personalities">Meet the ghosts</a> ·
+  <a href="#-architecture">How it works</a>
 </p>
 
 ## 🎮 Description
 
 A Python recreation of Pac-Man using the assigned MazeGenerator package.
 Collect pellets, avoid ghosts, use power pellets, and complete at least ten
-levels before the timer runs out. The game includes persistent top-ten
-highscores, pause instructions, and optional gameplay cheats.
+levels before the timer runs out—or switch to **Arcade Survival** and see how
+long you can last against increasingly fast ghosts. The game includes animated
+Pac-Man movement, power pellets, persistent mode-specific top-ten highscores,
+pause instructions, and optional gameplay cheats.
 
 The graphics backend is Pygame. Drawing stays in `Draw`, using images, bitmap
 letters and pixel operations. This project does not run MiniLibX itself; the
 comparison with Paris MiniLibX and Codam MLX42 is in [MLX.md](MLX.md).
+
+## 🕹️ Game modes
+
+| | 🟡 Classic Mode | 🔥 Arcade Survival |
+| --- | --- | --- |
+| **Goal** | Clear every pellet across 10+ levels | Survive as long as possible |
+| **Clock** | Countdown (90 seconds by default) | Elapsed survival time |
+| **Progression** | Finish a maze to unlock the next level | Clearing pellets starts a new wave in the same run |
+| **Challenge** | Beat the clock and protect your lives | Ghost speed increases every 30 seconds (up to +2 speed) |
+| **Finish** | Complete all levels to win; lose on timeout or no lives | Run ends when all lives are lost |
+| **Leaderboard** | Classic high scores | Separate Survival high scores |
+
+**Classic** rewards precision and route planning. **Survival** rewards endurance:
+the maze keeps refilling with pellets as waves advance, while the ghosts become
+more dangerous over time. Your score, lives, elapsed time, and wave are visible
+in the Survival HUD.
 
 ## 📖 Instructions preview
 
@@ -36,10 +67,13 @@ artwork here as a preview; the controls below are the up-to-date reference.
 ## ✨ What we built
 
 - **Procedural mazes:** each level uses the provided MazeGenerator, with configurable dimensions and seeds.
-- **Arcade-style movement:** navigate corridors, collect pellets, and use power pellets to turn the tables on ghosts.
+- **Animated Pac-Man:** five mouth frames cycle while moving, with direction-aware drawing and a resting pose when stationary.
+- **Arcade-style movement:** navigate corridors, collect pellets, and use 10-second power pellets to turn the tables on ghosts.
+- **Two game modes:** timed Classic progression and endless Arcade Survival waves with escalating ghost speed.
 - **Four ghost personalities:** each ghost has its own chase target and makes decisions at maze intersections.
 - **Level progression:** keep your score and remaining lives as you work through ten or more levels.
-- **Local leaderboard:** save your best runs to a JSON-backed top-ten highscore table.
+- **Two local leaderboards:** Classic and Survival runs have separate JSON-backed top-ten score tables.
+- **Reliable gameplay timing:** monotonic-clock countdowns, power-up expiration, and pause-aware elapsed time.
 - **Extra controls:** pause, view instructions, and experiment with optional cheats.
 
 ## 👻 Ghost AI — four different personalities
@@ -196,7 +230,10 @@ from the working directory.
 ## 🏆 Highscores
 
 `High` stores a JSON object containing a `scores` array. Each entry has a `name`
-and a nonnegative integer `score`. Names accept one to ten ASCII letters,
+and a nonnegative integer `score`. **Classic** writes to the configured
+`highscore_filename`; **Survival** uses a separate file with `_survival`
+appended before its extension (for example, `highscores_survival.json`).
+Names accept one to ten ASCII letters,
 digits and spaces and must contain a non-space character.
 
 Scores load when the menu starts and refresh when Highscores is opened. At game
@@ -238,6 +275,11 @@ path.
 We gave each ghost its own targeting strategy, as explained in the Ghost AI section above.
 
 Pausing also stops eaten-ghost respawn, player power and the level timer.
+`src/game/clock.py` provides a monotonic millisecond clock for countdowns,
+survival time and timed power effects without initializing Pygame audio.
+Pac-Man animation advances during actual movement and rendering only displays
+the current frame. Survival increases ghost speed gradually, up to +2, and
+replenishes pellets for each new wave without resetting the run.
 Unexpected screen errors report their context and return to the menu; startup
 failures and Ctrl+C are handled without a traceback.
 
@@ -264,6 +306,7 @@ Pygame font rasterization.
 | `src/ui/content.py`, `src/ui/theme.py` | Shared instructions and colors |
 | `src/game_controller.py` | Connect gameplay objects and screen transitions |
 | `src/maze.py` | Adapt the assigned generator and movement coordinates |
+| `src/game/clock.py` | Monotonic millisecond timestamps for gameplay timers |
 | `src/game/` | Player, ghosts, pellets, score, timing, cheats and persistence |
 | `src/resources.py`, `src/assets/` | Resolve and store the resources used at runtime |
 
